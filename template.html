@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!--  External imports   -->
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://momentjs.com/downloads/moment.js"></script>
+	<script type="text/javascript" src="https://unpkg.com/tabulator-tables@4.5.3/dist/js/tabulator.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@4.5.3/dist/css/tabulator.min.css">
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <!--  Custom imports  -->
+    <script type="text/javascript" src="main.js"></script>
+    <script type="text/javascript" src="plot.js"></script>
+    <script type="text/javascript" src="table.js"></script>
+</head>
+<body>
+    <!--  Basic structure  -->
+    <div class="m-3">
+        <div id="selections1" class="row"></div>
+        <div id="selections2" class="row"></div>
+        <a role="button" data-toggle="collapse" href="#catChecks" role="button" aria-expanded="false" aria-controls="catChecks">
+            Category Detail
+        </a>
+        <div id="catChecks" class="row collapse"></div>
+        <div id="titleText"></div>
+        <div id="transPlot"></div>
+        <div id="transTable"></div>
+    </div>
+    <script>
+        allTransData = {{ trans_data }}
+        allMetaCats = {{ meta_cats }}
+        main()
+    </script>
+</body>
+</html>
