@@ -4,24 +4,30 @@ import json
 import itertools
 import re
 import copy
+from tempfile import gettempdir
 
-from utils import is_ext, strip_ext
+from utils import is_ext, strip_ext, get_dir_filenames, save_as_json, copy_file, path_join
 
 
-def convert_transactions(trans_path='all_trans', convert_all=False):
-    fnames = os.listdir(trans_path)
+def convert_transactions(input_trans_path, output_trans_path, convert_all=False):
+    input_fnames = get_dir_filenames(input_trans_path)
+    csv_fnames = [strip_ext(f) for f in input_fnames if is_ext(f, 'csv')]
     if convert_all:
-        fnames_to_convert = [f for f in fnames if is_ext(f, 'csv')]
+        fnames_to_convert = csv_fnames
     else:
-        csv_fnames = [strip_ext(f) for f in fnames if is_ext(f, 'csv')]
-        json_fnames = [strip_ext(f) for f in fnames if is_ext(f, 'json')]
+        output_fnames = get_dir_filenames(output_trans_path)
+        json_fnames = [strip_ext(f) for f in output_fnames if is_ext(f, 'json')]
         fnames_to_convert = [f + '.csv' for f in (set(csv_fnames) - set(json_fnames))]
+    temp_dir = gettempdir()
     for fname in fnames_to_convert:
-        with open(os.path.join(trans_path, fname), 'r') as f:
+        temp_fname = path_join(temp_dir, fname)
+        copy_file(path_join(input_trans_path, fname), temp_fname)
+        with open(temp_fname, 'r') as f:
             csv_reader = csv.DictReader(_lower_first(f))
             trans = json.loads(json.dumps([r for r in csv_reader]))
             trans = standardize_transactions(trans, fname)
-            json.dump(trans, open(os.path.join(trans_path, strip_ext(fname) + '.json'), 'w'))
+            save_as_json(trans, path_join(output_trans_path, strip_ext(fname) + '.json'))
+        os.remove(temp_fname)
 
 
 def _lower_first(iterator):

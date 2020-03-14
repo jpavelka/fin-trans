@@ -12,7 +12,7 @@ function main(){
         .selectAll('option')
         .data(sels).enter()
         .append('option')
-        .attr('value', d)
+        .attr('value', d => d)
         .text(d => d)
 
     createPlot(transData, metaCats)
