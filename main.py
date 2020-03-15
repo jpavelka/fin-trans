@@ -6,7 +6,7 @@ import json
 import flask
 from jinja2 import Template
 
-from utils import is_ext, get_dir_filenames
+from utils import is_ext, get_dir_filenames, load_from_json, path_join
 from pc_convert import convert_transactions
 
 
@@ -15,12 +15,13 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
     fnames = [f for f in get_dir_filenames(trans_path) if is_ext(f, 'json')]
     trans = []
     for fname in fnames:
-        trans += json.load(open(os.path.join(trans_path, fname), 'r'))
-    cats = json.load(open(os.path.join(cat_path, 'meta-cats.json'), 'r'))
+        trans += load_from_json(path_join(trans_path, fname))
+    cats = load_from_json(path_join(cat_path, 'meta-cats.json'))
     with open('template.html', 'r') as f:
         template_str = ''.join(f.readlines())
     template = Template(template_str)
-    rendered = template.render(trans_data=trans, meta_cats=cats)
+    rendered = template.render(trans_data=trans, meta_cats=cats, main_js=_file_contents('main.js'),
+                               plot_js=_file_contents('plot.js'), table_js=_file_contents('table.js'))
     if serve:
         return rendered
     else:
@@ -31,6 +32,12 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
                 os.system('start {}'.format(html_name))
             else:
                 os.system('open {}'.format(html_name))
+
+
+def _file_contents(fname):
+    with open(fname, 'r') as f:
+        contents = f.read()
+    return contents
 
 
 if __name__ == '__main__':
