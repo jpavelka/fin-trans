@@ -1,7 +1,6 @@
 import os
 import sys
 import argparse
-import json
 
 import flask
 from jinja2 import Template
@@ -34,6 +33,11 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
                 os.system('open {}'.format(html_name))
 
 
+def cloud_main(*args):
+    return render_template(trans_path=os.environ['TRANS_PATH'], pc_trans_path=os.environ['PC_TRANS_PATH'],
+                           cat_path='', html_name='', auto_open=False, serve=True)
+
+
 def _file_contents(fname):
     with open(fname, 'r') as f:
         contents = f.read()
@@ -51,7 +55,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.serve:
         app = flask.Flask(__name__)
-
         @app.route('/', methods=['GET'])
         def server_main():
             return render_template(**vars(args))
