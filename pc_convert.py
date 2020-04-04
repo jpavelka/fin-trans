@@ -15,8 +15,6 @@ def convert_transactions(input_trans_path, output_trans_path, convert_all=False)
     if convert_all:
         fnames_to_convert = csv_fnames
     else:
-        if not os.path.isdir(output_trans_path):
-            os.mkdir(output_trans_path)
         output_fnames = get_dir_filenames(output_trans_path)
         json_fnames = [strip_ext(f) for f in output_fnames if is_ext(f, 'json')]
         fnames_to_convert = [f + '.csv' for f in (set(csv_fnames) - set(json_fnames))]
@@ -85,7 +83,3 @@ def fill_transaction(t, source, t_id):
             new_t[key] = values[new_i if len(values) > new_i else -1]
             new_t = fill_transaction(new_t, source, f'{t_id}_{new_i}')
     return t, new_transactions
-
-
-if __name__ == '__main__':
-    convert_transactions()
