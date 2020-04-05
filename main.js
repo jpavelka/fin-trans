@@ -68,6 +68,12 @@ function main(){
             labelText: ''
         }
     }
+    // get all time frames
+    var timeSelections = {}
+    selectObjects.timeFrame.data.map(x => {
+        var tfVal = x.value
+        timeSelections[tfVal] = sortedUniqueArray(allTransData.map(d => getTime(d, tfVal)), true)
+    })
     // get current selection values (or set to defaults)
     Object.keys(selectObjects).map(s => {
         selObj = selectObjects[s]
@@ -120,7 +126,7 @@ function main(){
     transData = transData.filter(d => allChecked.cat.includes(d.category))
 
     // generate next selection elements and filter
-    allTimes = sortedUniqueArray(transData.map(d => getTime(d, curVal.timeFrame)), true)
+    allTimes = timeSelections[curVal.timeFrame]
     selIds = curVal.plotType == 'trend' ? ['startTime', 'endTime'] : ['time']
     selIds.map(x => {
         selObj = selectObjects[x]
@@ -142,7 +148,10 @@ function main(){
             return getTime(d, curVal.timeFrame) == curVal.time
         })
     }
-    createPlot(transData, curVal)
+    otherPlotData = {
+        timeSelections: timeSelections[curVal.timeFrame]
+    }
+    createPlot(transData, curVal, otherPlotData)
     createTable(transData)
 }
 

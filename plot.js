@@ -1,13 +1,20 @@
-function createPlot(transData, selVals, includeAverages) {
+function createPlot(transData, selVals, otherPlotData, includeAverages) {
     includeAverages = includeAverages || true
+    var plotType = selVals.plotType
     var plotData = transData.map(d => getPlotData(d, selVals.plotType, selVals.transCat, selVals.timeFrame))
     var traceNames = sortedUniqueArray(plotData.map(d => d.traceName))
     var colors = d3.schemeCategory20
-    if (selVals.plotType == 'trend'){
+    if (plotType == 'trend'){
         traceNames = ['Total'].concat(traceNames)
     }
-    var xVals = sortedUniqueArray(plotData.map(d => d.x))
-    var plotType = selVals.plotType
+    var xVals
+    if (plotType == 'trend'){
+        xVals = sortedUniqueArray(otherPlotData.timeSelections.filter(x => {
+            return x >= selVals.startTime && x <= selVals.endTime
+        }))
+    } else {
+        xVals = sortedUniqueArray(plotData.map(d => d.x))
+    }
     plotlyDataObj = {}
     traceNames.map(t => {
         plotlyDataObj[t] = {
