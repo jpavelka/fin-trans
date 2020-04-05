@@ -22,8 +22,8 @@ def get_dir_filenames(path):
     if _is_gcs_path(path):
         bucket_name, dir_name = gcs_path_to_bucket_and_fname(path)
         client = storage.Client()
-        bucket = client.get_bucket(bucket_name)
-        print()
+        names = [re.sub('^{}/'.format(dir_name), '', x.name) for x in client.list_blobs(bucket_name, prefix=dir_name)]
+        return [n for n in names if n != '']
     else:
         return os.listdir(path)
 

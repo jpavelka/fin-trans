@@ -3,3 +3,6 @@ __pycache__
 pc_trans
 transactions
 rendered.html
+key.json
+.venv
+.theia
