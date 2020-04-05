@@ -98,9 +98,32 @@ function createPlot(transData, selVals, otherPlotData, includeAverages) {
         transTypeStr = selVals.transType == 'expense' ? 'Expenses' : 'Income'
         transCatStr = selVals.transCat == 'all' ? 'All' : selVals.transCat
         timeStr = displayTime(selVals.time)
-        console.log(selVals)
         layout['title'] = transCatStr + ' ' + transTypeStr + ' - ' + timeStr
     }
+    if (plotlyData.length == 0){
+        layout.annotations = [{
+            xref: 'paper',
+            yref: 'paper',
+            x: 0.5,
+            y: 0.75,
+            text: 'No data for current selection',
+            font: {
+                size: 32
+            },
+            showarrow: false,
+        }]
+        layout.xaxis = {
+            showgrid: false,
+            zeroline: false,
+            showticklabels: false
+        }
+        layout.yaxis = {
+            showgrid: false,
+            zeroline: false,
+            showticklabels: false
+        }
+    }
+    console.log(layout)
     new Plotly.newPlot('transPlot', plotlyData, layout)
     document.getElementById('transPlot').on('plotly_click', data => {
         var d = data.points[0]
@@ -116,7 +139,6 @@ function createPlot(transData, selVals, otherPlotData, includeAverages) {
         } else if (plotType == 'singlePeriod') {
             tableData = transData.filter(x => getCat(x, selVals.transCat) == d.x)
         }
-        console.log(tableData)
         createTable(tableData)
     })
 }
