@@ -16,11 +16,11 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
     for fname in fnames:
         trans += load_from_json(path_join(trans_path, fname))
     cats = load_from_json(path_join(cat_path, 'meta-cats.json'))
-    with open('template.html', 'r') as f:
+    with open('web/template.html', 'r') as f:
         template_str = ''.join(f.readlines())
     template = Template(template_str)
-    rendered = template.render(trans_data=trans, meta_cats=cats, main_js=_file_contents('main.js'),
-                               plot_js=_file_contents('plot.js'), table_js=_file_contents('table.js'))
+    rendered = template.render(trans_data=trans, meta_cats=cats, main_js=_file_contents('web/main.js'),
+                               plot_js=_file_contents('web/plot.js'), table_js=_file_contents('web/table.js'))
     if serve:
         return rendered
     else:
@@ -35,7 +35,7 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
 
 def cloud_main(*args):
     return render_template(trans_path=os.environ['TRANS_PATH'], pc_trans_path=os.environ['PC_TRANS_PATH'],
-                           cat_path='', html_name='', auto_open=False, serve=True)
+                           cat_path=os.environ['CAT_PATH'], html_name='', auto_open=False, serve=True)
 
 
 def _file_contents(fname):

@@ -4,5 +4,6 @@ pc_trans
 transactions
 rendered.html
 key.json
+meta-cats.json
 .venv
 .theia
