@@ -16,7 +16,7 @@ def convert_transactions(input_trans_path, output_trans_path, convert_all=False)
     input_fnames = get_dir_filenames(input_trans_path)
     csv_fnames = [strip_ext(f) for f in input_fnames if is_ext(f, 'csv')]
     if convert_all:
-        fnames_to_convert = csv_fnames
+        fnames_to_convert = [f + '.csv' for f in csv_fnames]
     else:
         output_fnames = get_dir_filenames(output_trans_path)
         json_fnames = [strip_ext(f) for f in output_fnames if is_ext(f, 'json')]

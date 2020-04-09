@@ -9,8 +9,8 @@ from utils import is_ext, get_dir_filenames, load_from_json, path_join, save_str
 from pc_convert import convert_transactions
 
 
-def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, serve):
-    convert_transactions(input_trans_path=pc_trans_path, output_trans_path=trans_path)
+def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, serve, convert_all):
+    convert_transactions(input_trans_path=pc_trans_path, output_trans_path=trans_path, convert_all=convert_all)
     fnames = [f for f in get_dir_filenames(trans_path) if is_ext(f, 'json')]
     trans = []
     for fname in fnames:
@@ -52,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--html_name', default='rendered.html')
     parser.add_argument('--auto_open', default=False, action='store_true')
     parser.add_argument('--serve', default=False, action='store_true')
+    parser.add_argument('--convert_all', default=False, action='store_true')
     args = parser.parse_args()
     if args.serve:
         app = flask.Flask(__name__)
