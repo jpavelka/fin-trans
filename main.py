@@ -24,7 +24,7 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
     if serve:
         return rendered
     else:
-        save_str(rendered, html_name)
+        save_str(rendered, html_name, content_type='text/html')
         if auto_open:
             if sys.platform in ['win32', 'win64']:
                 os.system('start {}'.format(html_name))

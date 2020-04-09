@@ -67,17 +67,20 @@ def load_bytes(load_path):
         return bytes_string
 
 
-def save_str(s, save_path):
+def save_str(s, save_path, content_type=None):
     save_bytes(s.encode(), save_path)
 
 
-def save_bytes(bytes_string, save_path):
+def save_bytes(bytes_string, save_path, content_type=None):
     if _is_gcs_path(save_path):
         client = storage.Client()
         bucket_name, file_name = gcs_path_to_bucket_and_fname(save_path)
         bucket = client.get_bucket(bucket_name)
         model_blob = bucket.blob(file_name)
-        model_blob.upload_from_string(bytes_string)
+        if content_type is not None:
+            model_blob.upload_from_string(bytes_string, content_type=content_type)
+        else:
+            model_blob.upload_from_string(bytes_string)
     else:
         with open(save_path, 'wb') as f:
             f.write(bytes_string)
