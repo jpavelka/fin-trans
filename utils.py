@@ -67,6 +67,10 @@ def load_bytes(load_path):
         return bytes_string
 
 
+def save_str(s, save_path):
+    save_bytes(s.encode(), save_path)
+
+
 def save_bytes(bytes_string, save_path):
     if _is_gcs_path(save_path):
         client = storage.Client()

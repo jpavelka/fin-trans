@@ -5,7 +5,7 @@ import argparse
 import flask
 from jinja2 import Template
 
-from utils import is_ext, get_dir_filenames, load_from_json, path_join
+from utils import is_ext, get_dir_filenames, load_from_json, path_join, save_str
 from pc_convert import convert_transactions
 
 
@@ -24,8 +24,7 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
     if serve:
         return rendered
     else:
-        with open(html_name, 'w') as f:
-            f.writelines(rendered)
+        save_str(rendered, html_name)
         if auto_open:
             if sys.platform in ['win32', 'win64']:
                 os.system('start {}'.format(html_name))
@@ -35,7 +34,8 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
 
 def cloud_main(*args):
     return render_template(trans_path=os.environ['TRANS_PATH'], pc_trans_path=os.environ['PC_TRANS_PATH'],
-                           cat_path=os.environ['CAT_PATH'], html_name='', auto_open=False, serve=True)
+                           cat_path=os.environ['CAT_PATH'], html_name=os.environ['OUTPUT_PATH'],
+                           auto_open=False, serve=False)
 
 
 def _file_contents(fname):
