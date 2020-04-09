@@ -123,7 +123,6 @@ function createPlot(transData, selVals, otherPlotData, includeAverages) {
             showticklabels: false
         }
     }
-    console.log(layout)
     new Plotly.newPlot('transPlot', plotlyData, layout)
     document.getElementById('transPlot').on('plotly_click', data => {
         var d = data.points[0]

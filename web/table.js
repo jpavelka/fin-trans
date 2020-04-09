@@ -17,6 +17,8 @@ function createTable(transData) {
         {title: 'Category', field: 'category', headerFilter: 'select', headerFilterParams: tableFilterObjs['category'], width: 100},
         {title: 'Comment', field: 'comment', headerFilter: 'input', width: 200},
         {title: 'Amount', field: 'amount', align: 'right', formatter: cell => currencyFormatter.format(cell.getValue()),
+            headerFilter: 'input', width: 100},
+        {title: 'Tags', field: 'tags', formatter: cell => tagsFormatter(cell.getValue()),
             headerFilter: 'input', width: 100}
     ]
     var skuTable = new Tabulator('#transTable', {
@@ -26,4 +28,9 @@ function createTable(transData) {
         pagination: 'local',
         paginationSize: 15
     })
+}
+
+function tagsFormatter(value){
+    value = value || []
+    return value.join(', ')
 }

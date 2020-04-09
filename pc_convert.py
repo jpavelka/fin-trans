@@ -8,6 +8,9 @@ from tempfile import gettempdir
 
 from utils import is_ext, strip_ext, get_dir_filenames, save_as_json, copy_file, path_join
 
+standard_fields = {'date', 'account', 'description', 'category', 'tags', 'amount', 'comment', 'source', 'id', 'type',
+                   'hidden_notes'}
+
 
 def convert_transactions(input_trans_path, output_trans_path, convert_all=False):
     input_fnames = get_dir_filenames(input_trans_path)
@@ -35,11 +38,6 @@ def _lower_first(iterator):
 
 
 def standardize_transactions(trans, fname):
-    pc_fields = ['date', 'account', 'description', 'category', 'tags', 'amount']
-    other_fields = ['comment', 'source', 'id', 'type', 'hidden_notes']
-    standard_fields = set(pc_fields + other_fields)
-    if standard_fields.issubset(set(trans[0].keys())):
-        return trans
     drop_ids = []
     all_new_transactions = []
     for t_counter, t in enumerate(trans):
@@ -47,15 +45,23 @@ def standardize_transactions(trans, fname):
         if new_transactions is not None:
             drop_ids.append(t['id'])
             all_new_transactions += new_transactions
-    return [t for t in trans if t['id'] not in drop_ids] + all_new_transactions
+    final_transactions = [t for t in trans if t['id'] not in drop_ids] + all_new_transactions
+    final_transactions = [_format_tags(t) for t in final_transactions]
+    final_transactions = [{k: t[k] for k in t if t[k] not in [None, '', []]} for t in final_transactions]
+    return final_transactions
+
+
+def _format_tags(t):
+    if isinstance(t['tags'], str):
+        t['tags'] = [x for x in t['tags'].split(',') if x != '']
+    for k in set(t.keys() - standard_fields):
+        t['tags'].append(k)
+    return t
 
 
 def fill_transaction(t, source, t_id):
     t['source'] = source
     t['id'] = f'trans{t_id}'
-    t['comment'] = ''
-    t['hidden_notes'] = []
-    t['tags'] = []
     t['amount'] = float(t['amount'])
     t['type'] = 'income' if t['amount'] > 0 else 'expense'
     t['amount'] = abs(t['amount'])
