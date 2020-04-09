@@ -68,7 +68,7 @@ def load_bytes(load_path):
 
 
 def save_str(s, save_path, content_type=None):
-    save_bytes(s.encode(), save_path)
+    save_bytes(s.encode(), save_path, content_type=content_type)
 
 
 def save_bytes(bytes_string, save_path, content_type=None):
