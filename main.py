@@ -35,7 +35,7 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
 def cloud_main(*args):
     return render_template(trans_path=os.environ['TRANS_PATH'], pc_trans_path=os.environ['PC_TRANS_PATH'],
                            cat_path=os.environ['CAT_PATH'], html_name=os.environ['OUTPUT_PATH'],
-                           auto_open=False, serve=False)
+                           auto_open=False, serve=False, convert_all=False)
 
 
 def _file_contents(fname):
