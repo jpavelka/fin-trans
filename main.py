@@ -14,7 +14,7 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
     fnames = [f for f in get_dir_filenames(trans_path) if is_ext(f, 'json')]
     trans = []
     for fname in fnames:
-        trans += load_from_json(path_join(trans_path, fname))
+        trans.append(load_from_json(path_join(trans_path, fname)))
     cats = load_from_json(path_join(cat_path, 'meta-cats.json'))
     with open('web/template.html', 'r') as f:
         template_str = ''.join(f.readlines())

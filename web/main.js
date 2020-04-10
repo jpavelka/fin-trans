@@ -1,4 +1,5 @@
 function main(){
+    var allTransData = getFullTransData(allTransDataCompact)
     var transData = allTransData
     var selElements = [d3.select('#selections1'), d3.select('#selections2')]
     // set selection element default
@@ -251,6 +252,27 @@ function addMetaCat(transData, metaCats){
         d.metaCat = metaCat
         return d
     })
+}
+
+function getFullTransData(allTransDataCompact){
+    var allTransData = []
+    allTransDataCompact.map(x => {
+        x.transactions.map(t => {
+            newT = {}
+            Object.keys(t).map(k => {
+                newT[x.key_map[k]] = t[k]
+            })
+            Object.keys(newT).map(c => {
+                if (Object.keys(x.cat_key_maps).includes(c)){
+                    console.log(c)
+                    console.log(x.cat_key_maps[c][newT[c]])
+                    newT[c] = x.cat_key_maps[c][newT[c]]
+                }
+            })
+            allTransData.push(newT)
+        })
+    })
+    return allTransData
 }
 
 currencyFormatter = Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 2})

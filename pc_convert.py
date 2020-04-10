@@ -29,8 +29,38 @@ def convert_transactions(input_trans_path, output_trans_path, convert_all=False)
             csv_reader = csv.DictReader(_lower_first(f))
             trans = json.loads(json.dumps([r for r in csv_reader]))
             trans = standardize_transactions(trans, fname)
+            trans = minify_transactions(trans, ['account', 'category', 'source', 'type'])
             save_as_json(trans, path_join(output_trans_path, strip_ext(fname) + '.json'))
         os.remove(temp_fname)
+
+
+def minify_transactions(trans, minify_keys):
+    cat_key_maps = {}
+    for k in minify_keys:
+        all_values = set(t[k] for t in trans)
+        k_map, rev_k_map = _get_key_maps(all_values)
+        for t in trans:
+            t[k] = rev_k_map[t[k]]
+        cat_key_maps[k] = k_map
+    all_keys = []
+    for t in trans:
+        for k in t.keys():
+            if k not in all_keys:
+                all_keys.append(k)
+    key_map, rev_key_map = _get_key_maps(all_keys)
+    trans = [{rev_key_map[k]: t[k] for k in t} for t in trans]
+    ret = {
+        'transactions': trans,
+        'key_map': key_map,
+        'cat_key_maps': cat_key_maps
+    }
+    return ret
+
+
+def _get_key_maps(values):
+    m = {str(i): k for i, k in enumerate(values)}
+    rev_m = {j: i for i, j in m.items()}
+    return m, rev_m
 
 
 def _lower_first(iterator):
