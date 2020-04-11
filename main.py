@@ -11,16 +11,17 @@ from pc_convert import convert_transactions
 
 def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, serve, convert_all):
     convert_transactions(input_trans_path=pc_trans_path, output_trans_path=trans_path, convert_all=convert_all)
-    fnames = [f for f in get_dir_filenames(trans_path) if is_ext(f, 'json')]
+    json_fnames = [f for f in get_dir_filenames(trans_path) if is_ext(f, 'json')]
     trans = []
-    for fname in fnames:
+    for fname in json_fnames:
         trans.append(load_from_json(path_join(trans_path, fname)))
     cats = load_from_json(path_join(cat_path, 'meta-cats.json'))
     with open('web/template.html', 'r') as f:
         template_str = ''.join(f.readlines())
     template = Template(template_str)
-    rendered = template.render(trans_data=trans, meta_cats=cats, main_js=_file_contents('web/main.js'),
-                               plot_js=_file_contents('web/plot.js'), table_js=_file_contents('web/table.js'))
+    js_fnames = ['web/' + f for f in get_dir_filenames('web') if is_ext(f, 'js')]
+    all_js_str = '\n'.join([_file_contents(fname) for fname in js_fnames])
+    rendered = template.render(trans_data=trans, meta_cats=cats, all_js=all_js_str)
     if serve:
         return rendered
     else:
