@@ -83,6 +83,89 @@ function main(){
         selObj.selectedValue = selNode.value
     })
 
+    //tag details
+    var allTags = []
+    allTransData.map(t => {
+        tTags = t.tags || []
+        tTags.map(tag => {
+            if (!allTags.includes(tag)){
+                allTags.push(tag)
+            }
+        })
+    })
+    allTagChecksInfo = {}
+    tagStatusLists = {
+        allowed: [],
+        required: [],
+        forbidden: []
+    }
+    allTags.map(tag => {
+        checksInfo = [
+            {status: 'allowed', text: 'Allowed', checkedDefault: true, marginTop: -5},
+            {status: 'required', text: 'Required', checkedDefault: false, marginTop: -10},
+            {status: 'forbidden', text: 'Forbidden', checkedDefault: false, marginTop: -10}
+        ]
+        checksInfo.map(info => {
+            info.id = getTagCheckId(tag, info)
+            info.checked = getCheckValue(info.id, info.checkedDefault)
+            if (info.checked){
+                tagStatusLists[info.status].push(tag)
+            }
+        })
+        allTagChecksInfo[tag] = checksInfo
+    })
+    d3.select('#tagChecks').selectAll('*').remove();
+    allTags.map(tag => {
+        checksInfo = allTagChecksInfo[tag]
+        var tagElement = d3.select('#tagChecks').append('div').attr('class', 'col-3 col-sm-2')
+            .append('div').attr('class', 'row')
+            .append('div').attr('class', 'col')
+            .append('p')
+            .text(tag + ': ')
+        checksInfo.map(info => {
+            var radioName = tag + 'TagRadio'
+            var checkId = info.id
+            var checkContainer = tagElement.append('div').attr('class', 'row')
+                .attr('style', 'margin-top:' + info.marginTop + 'px')
+                .append('div').attr('class', 'col')
+            checkContainer.append('input')
+                .attr('type', 'radio')
+                .attr('id', checkId)
+                .attr('name', radioName)
+                .attr('style', 'margin-left:10px')
+                .attr('onchange', 'main()')
+                .property('checked', info.checked)
+            checkContainer.append('label')
+                .attr('for', checkId)
+                .attr('style', 'margin-left:1px')
+                .text(info.text)
+        })
+    })
+    transData = transData.filter(d => {
+        var dTags = d.tags || []
+        var hasRequired = true
+        for (var i = 0; i < tagStatusLists.required.length; i++){
+            if (!dTags.includes(tagStatusLists.required[i])){
+                hasRequired = false
+                break
+            }
+        }
+        if (!hasRequired){
+            return false
+        }
+        var hasForbidden = false
+        for (var i = 0; i < tagStatusLists.forbidden.length; i++){
+            if (dTags.includes(tagStatusLists.forbidden[i])){
+                hasForbidden = true
+                break
+            }
+        }
+        if (hasForbidden){
+            return false
+        }
+        return true
+    })
+
     // generate initial selection elements, and filter transactions based on values
     selElements.map(s => {
         s.selectAll('*').remove();
@@ -113,11 +196,11 @@ function main(){
     // get current checkbox values and regenerate, filter based on values
     var allChecked = {'cat': [], 'metaCat': []}
     currentMetaCats.map(mc => {
-        if (getCheckValue(mc, true)){
+        if (getCatCheckValue(mc, true)){
             allChecked.metaCat.push(mc)
         }
         metaCats[mc].map(c => {
-            if (getCheckValue(c, false)){
+            if (getCatCheckValue(c, false)){
                 allChecked.cat.push(c)
             }
         })
@@ -152,6 +235,11 @@ function main(){
     otherPlotData = {
         timeSelections: timeSelections[curVal.timeFrame]
     }
+
+    d3.select('#catDetailLink').selectAll('*').remove()
+    d3.select('#catDetailLink').append('p').text("Category Detail")
+    d3.select('#tagDetailLink').selectAll('*').remove()
+    d3.select('#tagDetailLink').append('p').text("Tag Detail")
     createPlot(transData, curVal, otherPlotData)
     createTable(transData)
 }
@@ -181,7 +269,7 @@ function catChecksCreate(metaCat, cats, allChecked){
 }
 
 function metaCatCheckChange(mc, cats){
-    var checked = getCheckValue(mc, true)
+    var checked = getCatCheckValue(mc, true)
     cats.map(c => {
         d3.select('#' + getCheckId(c, false)).property('checked', checked)
     })
@@ -189,7 +277,7 @@ function metaCatCheckChange(mc, cats){
 }
 
 function catCheckChange(cat, metaCat){
-    if(!getCheckValue(metaCat, true)){
+    if(!getCatCheckValue(metaCat, true)){
         d3.select('#' + getCheckId(cat, false)).property('checked', false)
     }
     main()
@@ -200,9 +288,17 @@ function getCheckId(catName, metaCat){
     return metaCat ? catName + '_MetaCheckBox' : catName + '_CheckBox'
 }
 
-function getCheckValue(catName, metaCat){
-    chk = d3.select('#' + getCheckId(catName, metaCat))
-    chkNode = chk.node() || {checked: true}
+function getTagCheckId(tag, info){
+    return tag + 'TagCheck-' + info.text
+}
+
+function getCatCheckValue(catName, metaCat){
+    return getCheckValue(getCheckId(catName, metaCat), true)
+}
+
+function getCheckValue(checkId, checkedDefault){
+    chk = d3.select('#' + checkId)
+    chkNode = chk.node() || {checked: checkedDefault}
     return chkNode.checked
 }
 
@@ -264,8 +360,6 @@ function getFullTransData(allTransDataCompact){
             })
             Object.keys(newT).map(c => {
                 if (Object.keys(x.cat_key_maps).includes(c)){
-                    console.log(c)
-                    console.log(x.cat_key_maps[c][newT[c]])
                     newT[c] = x.cat_key_maps[c][newT[c]]
                 }
             })
