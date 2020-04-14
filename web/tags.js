@@ -16,9 +16,9 @@ function generateTagChecks(transData){
     }
     allTags.map(tag => {
         checksInfo = [
-            {status: 'allowed', text: 'Allowed', checkedDefault: true, marginTop: -5},
-            {status: 'required', text: 'Required', checkedDefault: false, marginTop: -10},
-            {status: 'forbidden', text: 'Forbidden', checkedDefault: false, marginTop: -10}
+            {status: 'allowed', text: 'Can include', checkedDefault: true, marginTop: -5},
+            {status: 'required', text: 'Must include', checkedDefault: false, marginTop: -10},
+            {status: 'forbidden', text: "Can't include", checkedDefault: false, marginTop: -10}
         ]
         checksInfo.map(info => {
             info.id = getTagCheckId(tag, info)
@@ -86,5 +86,5 @@ function filterByTags(transData){
 }
 
 function getTagCheckId(tag, info){
-    return tag + 'TagCheck-' + info.text
+    return tag + 'TagCheck-' + info.status
 }
