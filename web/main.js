@@ -1,10 +1,12 @@
 function main(){
     var allTransData = getFullTransData(allTransDataCompact)
     var transData = allTransData
+
     var selElements = [d3.select('#selections1'), d3.select('#selections2')]
     var selectObjects = getDefaultSelectObjects(selElements)
     selectObjects = getCurrentSelectionValues(selectObjects)
     var timeSelections = getTimeSelections(selectObjects, allTransData)
+    
     var curVal = generateInitialSelectionElements(selElements, selectObjects, transData)
     var metaCats = allMetaCats[curVal.catGroups]
     transData = addMetaCats(transData, metaCats)
@@ -14,12 +16,17 @@ function main(){
     currentMetaCats = currentMetaCats.filter(d => d != 'Misc.').concat(['Misc.'])
     curVal = getRemainingInitialSelectionValues(curVal, selectObjects, currentMetaCats)
     transData = transData.filter(d => curVal.transCat == 'all' || curVal.transCat == d.metaCat)
+    
     generateOtherSelectionElements(curVal, timeSelections, selectObjects)
+    generateTimeSelectionQuickSelects(curVal, timeSelections, selectObjects, selElements[selElements.length - 1])
     transData = filterOnOtherSelections(transData, curVal)
+    
     var allChecked = createCatChecks(metaCats, currentMetaCats)
     transData = transData.filter(d => allChecked.cat.includes(d.category))  
+    
     generateTagChecks(transData)
     transData = filterByTags(transData)
+    
     createPlot(transData, curVal, {timeSelections: timeSelections[curVal.timeFrame]})
     createTable(transData)
     addHtmlText()

@@ -126,6 +126,124 @@ function generateOtherSelectionElements(curVal, timeSelections, selectObjects){
     })
 }
 
+function generateTimeSelectionQuickSelects(curVal, allTimes, selObjs, selEl){
+    var quickSelEl = selEl.append('div').attr('class', 'col')
+        .text('Quick Selections')
+        .append('div').attr('class', 'row')
+        .attr('style', 'margin-top:10px')
+        .append('div').attr('class', 'col')
+    var timeFrame = curVal.timeFrame
+    var plotType = curVal.plotType
+    if (plotType == 'trend'){
+        if (timeFrame == 'month'){
+            allButtonInfo = [
+                {text: 'Last 12 Months', startTime: 'last-11', endTime: 'last'},
+                {text: 'This Year', startTime: 'thisYearStart', endTime: 'thisYearEnd'},
+                {text: 'Last Year', startTime: 'lastYearStart', endTime: 'lastYearEnd'},
+                {text: 'Max', startTime: 'first', endTime: 'last'},
+                {text: '-1 Year', startTime: 'current-12', endTime: 'current-12'},
+                {text: '+1 Year', startTime: 'current+12', endTime: 'current+12'},
+            ]
+        } else if (curVal.timeFrame == 'year'){
+            allButtonInfo = [
+                {text: 'Last 2 Years', startTime: 'last-1', endTime: 'last'},
+                {text: 'Last 5 Years', startTime: 'last-4', endTime: 'last'},
+                {text: 'Max', startTime: 'first', endTime: 'last'},
+                {text: '-1 Year', startTime: 'current-1', endTime: 'current-1'},
+                {text: '+1 Year', startTime: 'current+1', endTime: 'current+1'},
+            ]
+        }
+        allButtonInfo.map(info => {
+            info.startTimeId = selObjs.startTime.id
+            info.endTimeId = selObjs.endTime.id
+        })
+    } else if (plotType == 'singlePeriod'){
+        if (timeFrame == 'month'){
+            allButtonInfo = [
+                {text: 'This Month', time: 'last'},
+                {text: 'Last Month', time: 'last-1'},
+                {text: '-1 Month', time: 'current-1'},
+                {text: '+1 Month', time: 'current+1'},
+                {text: '-1 Year', time: 'current-12'},
+                {text: '+1 Year', time: 'current+12'},
+            ]
+        } else if (curVal.timeFrame == 'year'){
+            allButtonInfo = [
+                {text: 'This Year', time: 'last'},
+                {text: 'Last Year', time: 'last-1'},
+                {text: '-1 Year', time: 'current-1'},
+                {text: '+1 Year', time: 'current+1'},
+            ]
+        }
+        allButtonInfo.map(info => {
+            info.timeId = selObjs.time.id
+        })
+    }
+    allButtonInfo.map(x => {
+        addTimeSelectButton(quickSelEl, plotType, allTimes[timeFrame], x)
+    })
+}
+
+function addTimeSelectButton(element, plotType, times, buttonInfo){
+    element.append('button')
+        .attr('type', 'button')
+        .attr('style', 'margin-right:5px;margin-bottom:5px')
+        .on('click', () => timeSelectOnClick(plotType, times, buttonInfo))
+        .text(buttonInfo.text)
+}
+
+function timeSelectOnClick(plotType, times, info){
+    if (plotType == 'trend'){
+        d3.select('#' + info.startTimeId).property('value', getTimeFromCode(times, info.startTime, info.startTimeId))
+        d3.select('#' + info.endTimeId).property('value', getTimeFromCode(times, info.endTime, info.endTimeId))
+    } else if (plotType == 'singlePeriod'){
+        d3.select('#' + info.timeId).property('value', getTimeFromCode(times, info.time, info.timeId))
+    }    
+    main()
+}
+
+function getTimeFromCode(times, code, elId){
+    if (code == 'first'){
+        index = times.length - 1
+    } else if (code == 'last'){
+        index = 0
+    } else if (code.startsWith('last-')){
+        index = code.split('-')[1]
+    } else if (code.startsWith('thisYear')){
+        thisYearIndices = getYearIndex(moment().year(), times, code)
+    } else if (code.startsWith('lastYear')){
+        thisYearIndices = getYearIndex(moment().year() - 1, times, code)
+    } else if (code.startsWith('current')){
+        currentValue = d3.select('#' + elId).node().value
+        index = times.indexOf(currentValue)
+        if (code.startsWith('current-')){
+            offset = parseInt(code.split('-')[1])
+            index = index + offset
+        } else if (code.startsWith('current+')){
+            offset = parseInt(code.split('+')[1])
+            index = index - offset
+        }
+    }
+    index = Math.max(index, 0)
+    index = Math.min(index, times.length - 1)
+    return times[index]
+}
+
+function getYearIndex(year, times, code){
+    yearIndices = []
+    times.map((t, i) => {
+        if (moment(t).year() == year){
+            yearIndices.push(i)
+        }
+    })
+    if (code.endsWith('YearStart')){
+        index = yearIndices[yearIndices.length - 1]
+    } else if (code.endsWith('YearEnd')){
+        index = yearIndices[0]
+    }
+    return index
+}
+
 function filterOnOtherSelections(transData, curVal){
     if (curVal.plotType == 'trend'){
         transData = transData.filter(d => {
