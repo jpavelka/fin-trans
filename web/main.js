@@ -9,7 +9,10 @@ function main(){
     
     var curVal = generateInitialSelectionElements(selElements, selectObjects, transData)
     var metaCats = allMetaCats[curVal.catGroups]
-    transData = addMetaCats(transData, metaCats)
+    catChanges = metaCats.catChanges || {}
+    catTags = metaCats.catTags || {}
+    metaCats = metaCats.metaCats || metaCats
+    transData = addMetaCats(transData, metaCats, catChanges, catTags)
     metaCats['Misc.'] = sortedUniqueArray(transData.filter(d => d.metaCat == 'Misc.').map(d => d.category))
     transData = transData.filter(d => d.metaCat != 'Ignore' && d.type == curVal.transType)
     var currentMetaCats = sortedUniqueArray(transData.map(d => d.metaCat))
@@ -57,8 +60,21 @@ function getCheckValue(checkId, checkedDefault){
     return chkNode.checked
 }
 
-function addMetaCats(transData, metaCats){
+function addMetaCats(transData, metaCats, catChanges, catTags){
+    var catsToChange = Object.keys(catChanges)
+    var catsToTag = Object.keys(catTags)
     return transData.map(d => {
+        if (catsToTag.includes(d.category)){
+            tagsToAdd = catTags[d.category]
+            if (typeof tagsToAdd === 'string' || tagsToAdd instanceof String){
+                tagsToAdd = tagsToAdd.split(',')
+            }
+            d.tags = d.tags || []
+            d.tags = sortedUniqueArray(d.tags.concat(tagsToAdd))
+        }
+        if (catsToChange.includes(d.category)){
+            d.category = catChanges[d.category]
+        }
         metaCat = 'Misc.'
         Object.keys(metaCats).map(c => {
             if (metaCats[c].includes(d.category)){
