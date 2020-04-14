@@ -96,7 +96,6 @@ function createPlot(transData, selVals, otherPlotData, includeAverages) {
         layout['title'] = timeFrameStr + ' Trends - ' + transTypeStr + transCatStr
         subtitle = displayTime(selVals.startTime) + ' - ' + displayTime(selVals.endTime)
         layout['title'] += '<br><sub>' + subtitle + '</sub>'
-        console.log(selVals)
     } else if (plotType == 'singlePeriod') {
         transTypeStr = selVals.transType == 'expense' ? 'Expenses' : 'Income'
         transCatStr = selVals.transCat == 'all' ? 'All' : selVals.transCat
