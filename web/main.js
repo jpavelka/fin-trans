@@ -29,7 +29,9 @@ function main(){
     
     generateTagChecks(transData)
     transData = filterByTags(transData)
-    
+
+    createPlotTypeExtraSelections(curVal)
+
     createPlot(transData, curVal, {timeSelections: timeSelections[curVal.timeFrame]})
     createTable(transData)
     addHtmlText()

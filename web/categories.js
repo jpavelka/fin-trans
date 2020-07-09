@@ -63,6 +63,6 @@ function appendCheckbox(element, checkId, checked, name, metaCat, extra){
     }
     element.append('label')
         .attr('for', checkId)
-        .text(name)
+        .html('&nbsp;' + name)
     return element
 }

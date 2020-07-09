@@ -275,3 +275,23 @@ function selectCreate(selInput){
     selInput.selectedValue = selInput.selectedValue || d3.select('#' + selInput.id).node().value
     return selInput.selectedValue
 }
+
+function createPlotTypeExtraSelections(curVal){
+    if (curVal.plotType == "trend"){
+        var isChecked = getCheckValue('includeAveragesCheck', true)
+        var exSelEl = d3.select('#plotTypeExtraSelections')
+        exSelEl.selectAll('*').remove()
+        var boxEl = exSelEl.append('input')
+            .attr('type', 'checkbox')
+            .attr('id', 'includeAveragesCheck')
+            .attr('name', 'includeAveragesCheck')
+            .on('change', () => main())
+            .property('checked', isChecked)
+        exSelEl.append('label')
+            .attr('for', 'includeAveragesCheck')
+            .html('&nbsp;Include Averages')
+    } else if (curVal.plotType == "singlePeriod"){
+        var exSelEl = d3.select('#plotTypeExtraSelections')
+        exSelEl.selectAll('*').remove()
+    }
+}

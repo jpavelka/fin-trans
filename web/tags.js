@@ -53,7 +53,7 @@ function generateTagChecks(transData){
             checkContainer.append('label')
                 .attr('for', checkId)
                 .attr('style', 'margin-left:1px')
-                .text(info.text)
+                .html('&nbsp;' + info.text)
         })
     })
 }

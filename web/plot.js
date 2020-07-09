@@ -1,5 +1,5 @@
-function createPlot(transData, selVals, otherPlotData, includeAverages) {
-    includeAverages = includeAverages || true
+function createPlot(transData, selVals, otherPlotData) {
+    includeAverages = getCheckValue('includeAveragesCheck', true)
     var plotType = selVals.plotType
     var plotData = transData.map(d => getPlotData(d, selVals.plotType, selVals.transCat, selVals.timeFrame))
     var traceNames = sortedUniqueArray(plotData.map(d => d.traceName))
