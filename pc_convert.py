@@ -85,7 +85,7 @@ def _format_tags(t):
     if isinstance(t['tags'], str):
         t['tags'] = [x for x in t['tags'].split(',') if x != '']
     for k in set(t.keys() - standard_fields):
-        t['tags'].append(k)
+        t['tags'].append(k.lower())
     return t
 
 
