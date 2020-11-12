@@ -1,6 +1,11 @@
 function main(){
     var allTransData = getFullTransData(allTransDataCompact)
     var transData = allTransData
+    transData.map(d => {
+        if (Object.keys(catSwaps).includes(d.category)){
+            d.category = catSwaps[d.category]
+        }
+    })
 
     var selElements = [d3.select('#selections1'), d3.select('#selections2')]
     var selectObjects = getDefaultSelectObjects(selElements)

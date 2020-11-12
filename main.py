@@ -9,19 +9,20 @@ from utils import is_ext, get_dir_filenames, load_from_json, path_join, save_str
 from pc_convert import convert_transactions
 
 
-def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, serve, convert_all):
+def render_template(trans_path, pc_trans_path, cat_path, cat_swap_path, html_name, auto_open, serve, convert_all):
     convert_transactions(input_trans_path=pc_trans_path, output_trans_path=trans_path, convert_all=convert_all)
     json_fnames = [f for f in get_dir_filenames(trans_path) if is_ext(f, 'json')]
     trans = []
     for fname in json_fnames:
         trans.append(load_from_json(path_join(trans_path, fname)))
     cats = load_from_json(path_join(cat_path, 'meta-cats.json'))
+    cat_swaps = load_from_json(path_join(cat_swap_path, 'cat-swaps.json'))
     with open('web/template.html', 'r') as f:
         template_str = ''.join(f.readlines())
     template = Template(template_str)
     js_fnames = ['web/' + f for f in get_dir_filenames('web') if is_ext(f, 'js')]
     all_js_str = '\n'.join([_file_contents(fname) for fname in js_fnames])
-    rendered = template.render(trans_data=trans, meta_cats=cats, all_js=all_js_str)
+    rendered = template.render(trans_data=trans, meta_cats=cats, cat_swaps=cat_swaps, all_js=all_js_str)
     if serve:
         return rendered
     else:
@@ -35,8 +36,8 @@ def render_template(trans_path, pc_trans_path, cat_path, html_name, auto_open, s
 
 def cloud_main(*args):
     return render_template(trans_path=os.environ['TRANS_PATH'], pc_trans_path=os.environ['PC_TRANS_PATH'],
-                           cat_path=os.environ['CAT_PATH'], html_name=os.environ['OUTPUT_PATH'],
-                           auto_open=False, serve=False, convert_all=False)
+                           cat_path=os.environ['CAT_PATH'], cat_swap_path=os.environ['CAT_SWAP_PATH'],
+                           html_name=os.environ['OUTPUT_PATH'], auto_open=False, serve=False, convert_all=False)
 
 
 def _file_contents(fname):
@@ -50,6 +51,7 @@ if __name__ == '__main__':
     parser.add_argument('--trans_path', default='transactions')
     parser.add_argument('--pc_trans_path', default='pc_trans')
     parser.add_argument('--cat_path', default='')
+    parser.add_argument('--cat_swap_path', default='')
     parser.add_argument('--html_name', default='rendered.html')
     parser.add_argument('--auto_open', default=False, action='store_true')
     parser.add_argument('--serve', default=False, action='store_true')
