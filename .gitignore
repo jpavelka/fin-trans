@@ -8,3 +8,6 @@ meta-cats.json
 cat-swaps.json
 .venv
 .theia
+secrets
+dist
+node_modules
