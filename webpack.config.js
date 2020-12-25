@@ -23,7 +23,7 @@ module.exports = (env, options) => {
   }
   return {
     entry: {
-        index: ["@babel/polyfill", './src/index.js'],
+        index: ["@babel/polyfill", './src/index.js', './src/css/index.css'],
         login: ["@babel/polyfill", './src/login.js']
     },
     output: {

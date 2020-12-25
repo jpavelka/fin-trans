@@ -14,14 +14,10 @@ var firebaseConfig = {
 };
 firebase.default.initializeApp(firebaseConfig);
 
-// firebase.default.auth().onAuthStateChanged(user => {
-//     if (user){
-//         window.location.assign('/')
-//     } else {
 var uiConfig = {
     signInSuccessUrl: '/',
     signInOptions: [
-        firebase.default.auth.EmailAuthProvider.PROVIDER_ID,
+        // firebase.default.auth.EmailAuthProvider.PROVIDER_ID,
         firebase.default.auth.GoogleAuthProvider.PROVIDER_ID,
     ],
     tosUrl: '/',
@@ -31,6 +27,3 @@ var uiConfig = {
 }
 var ui = new firebaseui.auth.AuthUI(firebase.default.auth());
 ui.start('#firebaseui-auth-container', uiConfig);
-//     }
-// })
-

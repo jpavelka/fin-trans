@@ -37,7 +37,6 @@ firebase.default.auth().onAuthStateChanged(user => {
 var db = firebase.default.firestore();
 
 let mainDiv = d3.select('body')
-mainDiv.append('button').attr('id', 'logout-btn').text('log out')
 const logoutBtn = document.querySelector('#logout-btn');
 logoutBtn.addEventListener('click', e => {
   e.preventDefault();
