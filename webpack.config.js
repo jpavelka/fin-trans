@@ -15,6 +15,8 @@ module.exports = (env, options) => {
         template: './src/html/template.html',
         inject: true,
         chunks: ['index'],
+        imports: '<link href="https://unpkg.com/tabulator-tables/dist/css/tabulator.min.css" rel="stylesheet"><script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script><script src="https://cdn.plot.ly/plotly-latest.min.js"></script>',
+        bodyTemplate: "<div id='mainDiv'></div>",
         minify: {
           collapseWhitespace: options.mode == 'production'
         },
@@ -27,6 +29,16 @@ module.exports = (env, options) => {
         chunks: ['login'],
         imports: '<link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.6.1/firebase-ui-auth.css" />',
         bodyTemplate: "<div id='firebaseui-auth-container'></div>",
+        minify: {
+          collapseWhitespace: options.mode == 'production'
+        },
+    }),
+    new HtmlWebpackPlugin({
+        filename: 'upload.html',
+        title: 'Transactions - Upload',
+        template: './src/html/template.html',
+        inject: true,
+        chunks: ['upload'],
         minify: {
           collapseWhitespace: options.mode == 'production'
         },
@@ -58,8 +70,9 @@ module.exports = (env, options) => {
   }
   return {
     entry: {
-        index: ["@babel/polyfill", './src/nav.js', './src/index.js', './src/css/nav.css'],
+        index: ["@babel/polyfill", './src/nav.js', './src/login-check.js', './src/index.js', './src/css/nav.css'],
         login: ["@babel/polyfill", './src/nav.js', './src/login.js', './src/css/nav.css'],
+        upload: ["@babel/polyfill", './src/nav.js', './src/login-check.js', './src/upload.js', './src/css/nav.css'],
         tos: ['./src/nav.js', './src/css/nav.css'],
         privacy: ['./src/nav.js', './src/css/nav.css'],
     },
