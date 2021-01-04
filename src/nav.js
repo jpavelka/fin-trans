@@ -16,5 +16,5 @@ const logoutBtn = document.querySelector('#logout-btn');
 logoutBtn.addEventListener('click', e => {
   e.preventDefault();
   firebase.default.auth().signOut();
-  window.location.assign('/login.html')
+  window.location.assign('./login.html')
 })

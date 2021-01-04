@@ -4,6 +4,6 @@ firebase.default.auth().onAuthStateChanged(user => {
     if (user){
 
     } else {
-        window.location.assign('/login.html')
+        window.location.assign('./login.html')
     }
 })
