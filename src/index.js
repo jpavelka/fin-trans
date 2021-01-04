@@ -1,7 +1,10 @@
 const firebase = require("firebase");
 const d3 = require('d3');
 const _ = require('lodash');
-var db = firebase.default.firestore();
+const plot = require('./plot.js')
+const table = require('./table.js')
+const utils = require('./utils.js')
+const db = firebase.default.firestore();
 const generalSettingsRef = db.doc('settings/general');
 const categoryChangesRef = db.doc('settings/categoryChanges');
 const metaCategoriesRef = db.doc('settings/metaCategories');
@@ -9,11 +12,14 @@ let minMonth
 let maxMonth
 let loadMinMonth
 let allMonths
+let allYears
 let allLoadMonths
 let categoryChanges
 let metaCategoryOptions
 let metaCategories
 let usedMetaCats
+let usedCats
+let usedTags
 let allTx = [];
 let transformedTx
 let filteredTx
@@ -22,9 +28,11 @@ let selections = {
     cat: 'All',
     txType: 'expense',
     timeFrame: 'Month',
-    trendStartTime: loadMinMonth,
-    trendEndTime: maxMonth,
-    singlePeriodTime: maxMonth
+    includeAverages: 'Yes',
+    ignoreMetaCats: [],
+    ignoreCats: [],
+    requiredTags: [],
+    forbiddenTags: []
 }
 const monthRefs = [];
 let monthTx = {}
@@ -32,6 +40,9 @@ let monthTx = {}
 function renderPage({clone=true, transform=true, filter=true}){
     let mainDiv = d3.select('#mainDiv');
     mainDiv.selectAll("*").remove();
+    selections.trendStartTime = selections.trendStartTime || (selections.timeFrame == 'Month' ? loadMinMonth : allYears[0])
+    selections.trendEndTime = selections.trendEndTime || (selections.timeFrame == 'Month' ? maxMonth : allYears[allYears.length - 1])
+    selections.singlePeriodTime = selections.singlePeriodTime || (selections.timeFrame == 'Month' ? maxMonth : allYears[allYears.length - 1])
     while (metaCategoryOptions == undefined || categoryChanges == undefined){
         console.log('waiting')
     }
@@ -48,17 +59,17 @@ function renderPage({clone=true, transform=true, filter=true}){
     if (filter){
         filteredTx = filterTransactions(transformedTx)
     }
-    usedMetaCats = ['All'].concat(sortedUniqueArray(filteredTx.map(tx => tx.metaCategory)))
     let plotTx = getPlotTx(filteredTx)
-    let plotData = getPlotData(plotTx)
+    let plotData = plot.getPlotData({txs: plotTx, selections: selections})
     addSelections({parentDiv: mainDiv})
     mainDiv.append('div').attr('id', 'txPlot')
     mainDiv.append('div').attr('id', 'txTable')
-    renderPlot(plotData)
-    renderTable(plotTx)
+    plot.renderPlot({traces: plotData, selections: selections, plotElementId: 'txPlot'})
+    table.renderTable({tableTx: plotTx, selections: selections, tableElementId: 'txTable'})
 }
 
 function addSelections({parentDiv}){
+    allTimeValues = selections.timeFrame == 'Month' ? allMonths : allYears
     let selSetup = [
         {
             id: 'metaCat',
@@ -97,43 +108,66 @@ function addSelections({parentDiv}){
             id: 'trendStartTime',
             condition: selections.plotType == 'trend',
             labelText: 'Start ' + selections.timeFrame,
-            options: allMonths.map(m => {
+            options: allTimeValues.map(m => {
                 return {value: m, text: m}
             })
         }, {
             id: 'trendEndTime',
             condition: selections.plotType == 'trend',
             labelText: 'End ' + selections.timeFrame,
-            options: allMonths.map(m => {
+            options: allTimeValues.map(m => {
                 return {value: m, text: m}
             })
         }, {
             id: 'singlePeriodTime',
             condition: selections.plotType == 'singlePeriod',
             labelText: selections.timeFrame,
-            options: allMonths.map(m => {
+            options: allTimeValues.map(m => {
                 return {value: m, text: m}
+            })
+        }, {
+            id: 'includeAverages',
+            condition: selections.plotType == 'trend',
+            labelText: 'Include Averages',
+            options: ['Yes', 'No'].map(x => {
+                return {value: x, text: x}
             })
         }
     ]
     for (setup of selSetup){
         let id = setup.id + 'Sel'
-        let condition= setup.condition
+        let selDiv = parentDiv.append('div')
+        selDiv.append('label').attr('for', id).text(setup.labelText)
+        let sel = selDiv.append('select').attr('id', id).on('change', () => {
+            selChange()
+        })
+        for (op of setup.options){
+            option = sel.append('option').attr('value', op.value).html(op.text)
+            if (selections[setup.id] == op.value){
+                option.attr('selected', true)           
+            }
+        }
+        let condition = setup.condition
         if (condition == undefined){
             condition = true
         }
-        if (condition){
-            let selDiv = parentDiv.append('div')
-            selDiv.append('label').attr('for', id).text(setup.labelText)
-            let sel = selDiv.append('select').attr('id', id).on('change', () => {
-                selChange()
-            })
-            for (op of setup.options){
-                option = sel.append('option').attr('value', op.value).html(op.text)
-                if (selections[setup.id] == op.value){
-                    option.attr('selected', true)
-                }
-            }
+        if (!condition){
+            selDiv.style('display', 'none')
+        }
+    }
+    for (tag of usedTags){
+        let id = tag + 'TagSel'
+        let selDiv = parentDiv.append('div')
+        selDiv.append('label').attr('for', id).text(tag)
+        let sel = selDiv.append('select').attr('id', id)
+        sel.append('option').attr('value', 'can').html('Can have')
+        let cannotOpt = sel.append('option').attr('value', 'cannot').html("Can't have")
+        if (selections.forbiddenTags.includes(tag)){
+            cannotOpt.attr('selected', true)
+        }
+        let mustOpt = sel.append('option').attr('value', 'must').html('Must have')
+        if (selections.requiredTags.includes(tag)){
+            mustOpt.attr('selected', true)
         }
     }
 }
@@ -145,149 +179,43 @@ function selChange(){
             if (sel == 'txType'){
                 selections['cat'] = 'All'
             }
+            if (sel == 'timeFrame'){
+                selections.trendStartTime = undefined
+                selections.trendEndTime = undefined
+                selections.singlePeriodTime = undefined
+            }
             let clone = ['metaCat', 'catChange'].includes(sel)
             let transform = clone 
-            let filter = transform || ['txType'].includes(sel)
+            let filter = transform || ['txType', 'timeFrame', 'trendStartTime', 'trendEndTime', 'singlePeriodTime'].includes(sel)
             renderPage({clone: clone, transform: transform, filter: filter})
             break
         }
     }
 }
 
-function renderPlot(traces){
-    d3.select('#txPlot').selectAll("*").remove();
-    layout = {
-        hovermode: 'closest',
-        height: 500,
-    }
-    // if (plotType == 'trend'){
-    //     timeFrameStr = selVals.timeFrame == 'month' ? 'Monthly' : 'Yearly'
-    //     transTypeStr = selVals.transType == 'expense' ? 'Expenses' : 'Income'
-    //     transCatStr = selVals.transCat == 'All' ? '' : ' - ' + selVals.transCat
-    //     layout['title'] = timeFrameStr + ' Trends - ' + transTypeStr + transCatStr
-    //     subtitle = displayTime(selVals.startTime) + ' - ' + displayTime(selVals.endTime)
-    //     layout['title'] += '<br><sub>' + subtitle + '</sub>'
-    // } else if (plotType == 'singlePeriod') {
-    //     transTypeStr = selVals.transType == 'expense' ? 'Expenses' : 'Income'
-    //     transCatStr = selVals.transCat == 'All' ? 'All' : selVals.transCat
-    //     timeStr = displayTime(selVals.time)
-    //     layout['title'] = transCatStr + ' ' + transTypeStr + ' - ' + timeStr
-    // }
-    if (traces.length == 0){
-        layout.annotations = [{
-            xref: 'paper',
-            yref: 'paper',
-            x: 0.5,
-            y: 0.75,
-            text: 'No data for current selection',
-            font: {
-                size: 32
-            },
-            showarrow: false,
-        }]
-        layout.xaxis = {
-            showgrid: false,
-            zeroline: false,
-            showticklabels: false
-        }
-        layout.yaxis = {
-            showgrid: false,
-            zeroline: false,
-            showticklabels: false
-        }
-    }
-    new Plotly.newPlot('txPlot', traces, layout)
-}
-
 function filterTransactions(txs){
-    const startDateFilter = minMonth + '-01'
-    const endDateFilter = maxMonth + '-31'
-    txs = txs.filter(tx => tx.type == selections.txType)    
-    txs = txs.filter(tx => tx.date >= startDateFilter)    
-    txs = txs.filter(tx => tx.date <= endDateFilter)    
-    return txs
-}
-
-function getPlotTx(txs){    
-    if (selections.cat != 'All'){
-        txs = txs.filter(tx => tx.metaCategory == selections.cat)
-    }
-    return txs
-}
-
-function getPlotData(txs){
-    const plotType = selections.plotType
-    let traces = []
-    if (plotType == 'trend'){
-        const timeFrame = 'month'
-        const metaCategoryFilter = selections.cat
-        nameKey = metaCategoryFilter == 'All' ? 'metaCategory' : 'category'
-        if (timeFrame == 'month'){
-            for (tx of txs){
-                tx.xAxisVal = getTransactionMonth(tx)
-                tx.nameVal = tx[nameKey]
-            }        
-        }
-        const xAxisVals = sortedUniqueArray(txs.map(t => t.xAxisVal))
-        const nameVals = sortedUniqueArray(txs.map(t => t.nameVal))
-        let yValTotal = {}
-        for (nameVal of nameVals){
-            let trace = {
-                type: 'scatter',
-                name: nameVal,
-                x: [],
-                y: [],
-            }
-            nameTxs = txs.filter(tx => tx.nameVal == nameVal)
-            for (xVal of xAxisVals){
-                xValTxs = nameTxs.filter(tx => tx.xAxisVal == xVal)
-                yVal = xValTxs.reduce((a, b) => a + b.amount, 0)
-                trace.x.push(xVal)
-                trace.y.push(yVal)
-                yValTotal[xVal] = (yValTotal[xVal] || 0) + yVal
-            }
-            traces.push(trace)
-        }
-        traces = [{
-            type: 'scatter',
-            name: 'Total',
-            x: xAxisVals,
-            y: xAxisVals.map(x => yValTotal[x])
-        }].concat(traces)
-    }
-    return traces
-}
-
-function renderTable(tableTx){
-    d3.select('#txTable').selectAll("*").remove();
-    var tableFilterObjs = {
-        'account': {values: {}},
-        'category': {values: {}},
-        'metaCategory': {values: {}}
-    }
-    for (x of Object.keys(tableFilterObjs)){
-        let arr = sortedUniqueArray(tableTx.map(d => d[x]))
-        for (y of arr){
-            tableFilterObjs[x].values[y] = y
-        }
-    }
-    var tableColumns = [
-        {title: 'Date', field: 'date', headerFilter: 'input', width: 100},
-        {title: 'Amount', field: 'amount', align: 'right', formatter: cell => currencyFormatter.format(cell.getValue()), headerFilter: 'input', width: 100},
-        {title: 'Description', field: 'description', headerFilter: 'input', width: 200},
-        {title: 'Meta Category', field: 'metaCategory', headerFilter: 'select', headerFilterParams: tableFilterObjs['metaCategory'], width: 100},
-        {title: 'Category', field: 'category', headerFilter: 'select', headerFilterParams: tableFilterObjs['category'], width: 100},
-        {title: 'Comment', field: 'comment', headerFilter: 'input', width: 200},        
-        {title: 'Tags', field: 'tags', formatter: cell => tagsFormatter(cell.getValue()), headerFilter: 'input', width: 100},
-        {title: 'Account', field: 'account', headerFilter: 'input', width: 100, headerFilter: 'select', headerFilterParams: tableFilterObjs['account'], width: 100},
-    ]
-    var txTable = new Tabulator('#txTable', {
-        data: tableTx,
-        columns: tableColumns,
-        initialSort: [{column: 'date', dir: 'desc'}],
-        pagination: 'local',
-        paginationSize: 15
+    txs = txs.filter(tx => tx.type == selections.txType)
+    if (selections.plotType == 'trend'){
+        const startDateFilter = selections.trendStartTime + (selections.timeFrame == 'Month' ? '-01' : '')
+        const endDateFilter = selections.trendEndTime + (selections.timeFrame == 'Month' ? '-31' : '')
+        txs = txs.filter(tx => tx.date >= startDateFilter) 
+        txs = txs.filter(tx => tx.date <= endDateFilter)    
+    } else if (selections.plotType == 'singlePeriod'){
+        const dateFilter = selections.singlePeriodTime
+        txs = txs.filter(tx => utils.getSinglePeriod(tx.date, selections.timeFrame) == dateFilter)    
+    }    
+    usedMetaCats = ['All'].concat(utils.sortedUniqueArray(txs.map(tx => tx.metaCategory)))
+    usedCats = utils.sortedUniqueArray(txs.map(tx => tx.category))
+    usedTags = utils.sortedUniqueArray(txs.reduce((a, b) => a.concat((b.tags || [])), []))
+    txs = txs.filter(tx => {
+        return (tx.tags || []).filter(t => selections.forbiddenTags.includes(t)).length == 0
     })
+    txs = txs.filter(tx => {
+        let hasRequired = selections.requiredTags.map(t => ((tx.tags || []).includes(t) ? 1 : 0))
+        hasRequired.push(1)
+        return Math.min(...hasRequired) == 1
+    })
+    return txs
 }
 
 function transformTransactions(transactions){
@@ -309,23 +237,24 @@ function transformTransactions(transactions){
     return transactions.filter(tx => tx.metaCategory != 'Ignore')
 }
 
-function main(){
-    generalSettingsRef.onSnapshot(doc => generalSettingsSnapshot(doc));
-    metaCategoriesRef.onSnapshot(doc => metaCategoriesSnapshot(doc));
-    categoryChangesRef.onSnapshot(doc => categoryChangesSnapshot(doc));
+function getPlotTx(txs){    
+    if (selections.cat != 'All'){
+        txs = txs.filter(tx => tx.metaCategory == selections.cat)
+    }
+    return txs
 }
 
 function generalSettingsSnapshot(doc) {
     let data = doc.data()
     minMonth = data.minMonth
     maxMonth = data.maxMonth
-    loadMinMonth = monthAdd(maxMonth, -11)
+    loadMinMonth = utils.monthAdd(maxMonth, -11)
     if (minMonth > loadMinMonth){
         loadMinMonth = minMonth
     }
-    allMonths = getAllMonthsBetween(minMonth, maxMonth)
-    allLoadMonths = getAllMonthsBetween(loadMinMonth, maxMonth)
-    console.log(allLoadMonths)
+    allMonths = utils.getAllMonthsBetween(minMonth, maxMonth)
+    allLoadMonths = utils.getAllMonthsBetween(loadMinMonth, maxMonth)
+    allYears = utils.sortedUniqueArray(allMonths.map(m => m.slice(0, 4)))
     for (m of allLoadMonths){
         if (!Object.keys(monthTx).includes(m)){
             monthRefs[m] = db.doc('months/' + m)
@@ -353,44 +282,10 @@ function categoryChangesSnapshot(doc){
     categoryChanges = doc.data().v1
 }
 
-function getAllMonthsBetween(min, max){
-    let allMonthsBetween = []
-    let i = 0
-    while (true){
-        nextMonth = monthAdd(min, i)
-        if (nextMonth <= max){
-            allMonthsBetween.push(nextMonth)
-        } else {
-            break
-        }
-        i += 1
-    }
-    return allMonthsBetween
-}
-
-function monthAdd(month, n){
-    m = new Date(month + '-15')
-    m.setMonth(m.getMonth() + n)
-    return m.toISOString().slice(0, 7)
-}
-
-function sortedUniqueArray(x, reverse){
-    arr = Array.from(new Set(x)).sort()
-    if (reverse){
-        return arr.reverse()
-    }
-    return arr
-}
-
-function tagsFormatter(value){
-    value = value || []
-    return value.join(', ')
-}
-
-currencyFormatter = Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 2})
-
-function getTransactionMonth(t){
-    return t.date.slice(0, 7)
+function main(){
+    generalSettingsRef.onSnapshot(doc => generalSettingsSnapshot(doc));
+    metaCategoriesRef.onSnapshot(doc => metaCategoriesSnapshot(doc));
+    categoryChangesRef.onSnapshot(doc => categoryChangesSnapshot(doc));
 }
 
 main()
