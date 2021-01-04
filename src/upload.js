@@ -70,10 +70,12 @@ function sanitizeTxs(obj){
     )
     for (tx of newObj){
         tx.date = new Date(tx.date).toISOString().slice(0, 10)
-        if (typeof tx.tags == 'string'){
-            tx.tags = tx.tags.split(',')
+        if (tx.tags != undefined){
+            if (typeof tx.tags == 'string'){
+                tx.tags = tx.tags.split(',')
+            }
+            tx.tags = tx.tags.map(x => x.trim())
         }
-        tx.tags = tx.tags.map(x => x.trim())
     }
     return newObj
 }
