@@ -2,7 +2,7 @@ const firebase = require("firebase");
 var firebaseui = require('firebaseui');
 
 var uiConfig = {
-    signInSuccessUrl: './',
+    signInSuccessUrl: './index.html',
     signInOptions: [
         // firebase.default.auth.EmailAuthProvider.PROVIDER_ID,
         firebase.default.auth.GoogleAuthProvider.PROVIDER_ID,
