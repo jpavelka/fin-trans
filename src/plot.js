@@ -91,7 +91,7 @@ function getPlotData({txs, selections}){
             nameTxs = txs.filter(tx => tx.nameVal == nameVal)
             let trace = {
                 type: 'scatter',
-                name: nameVal,
+                _name: nameVal,
                 x: [],
                 y: [],
                 _txs: [],
@@ -108,11 +108,18 @@ function getPlotData({txs, selections}){
         }
         traces = [{
             type: 'scatter',
-            name: 'Total',
+            _name: 'Total',
             x: xAxisVals.map(x => utils.displayTime(x)),
             y: xAxisVals.map(x => yValTotal[x]),
             _txs: xAxisVals.map(x => txs.filter(tx => tx.xAxisVal == x))
         }].concat(traces)
+        for (trace of traces){
+            trace.hoverinfo = 'text'
+            trace.text = trace.y.map((y, i) => trace.name + '<br>' + trace.x[i] + '<br>' + utils.currencyFormatter.format(y))
+            trace.name = trace._name + ' - ' + utils.currencyFormatter.format(
+                trace._txs.reduce((a, b) => a.concat(b), []).reduce((a, b) => a + parseFloat(b.amount), 0)
+            )
+        }
         if (selections.includeAverages == 'Yes'){
             let avgTraces = []
             for ([i, trace] of traces.entries()){
@@ -122,12 +129,14 @@ function getPlotData({txs, selections}){
                 let yAvg = trace.y.reduce((a, b) => a + b, 0) / trace.y.length
                 let avgTrace = {
                     type: 'scatter',
-                    name: trace.name + ' Avg',
+                    name: trace._name + ' Avg',
                     x: trace.x,
                     y: trace.y.map(y => yAvg),
                     legendgroup: trace.name,
                     showlegend: false,
-                    line: {dash: 'dash', color: pSBC(0.2, colors[colorInd])}
+                    line: {dash: 'dash', color: pSBC(0.2, colors[colorInd])},
+                    hoverinfo: 'text',
+                    text: 'Avg. ' + trace._name + '<br>' + utils.currencyFormatter.format(yAvg)
                 }
                 avgTraces.push(avgTrace)
             }
@@ -142,7 +151,9 @@ function getPlotData({txs, selections}){
             type: 'bar',
             x: [],
             y: [],
-            _txs: []
+            _txs: [],
+            hoverinfo: 'text',
+            text: []
         }
         for (xVal of xAxisVals){            
             xValTxs = txs.filter(tx => tx.xAxisVal == xVal)
@@ -150,6 +161,7 @@ function getPlotData({txs, selections}){
             trace.x.push(xVal)
             trace.y.push(yVal)
             trace._txs.push(xValTxs)
+            trace.text.push(xVal + '<br>' + utils.currencyFormatter.format(yVal))
         }        
         traces.push(trace)
     }

@@ -23,7 +23,7 @@ function renderTable({tableTx, tableElementId}){
     }
     var tableColumns = [
         {title: 'Date', field: 'date', headerFilter: 'input', width: 100},
-        {title: 'Amount', field: 'amount', align: 'right', formatter: cell => currencyFormatter.format(cell.getValue()), headerFilter: 'input', width: 100},
+        {title: 'Amount', field: 'amount', align: 'right', formatter: cell => utils.currencyFormatter.format(cell.getValue()), headerFilter: 'input', width: 100},
         {title: 'Description', field: 'description', headerFilter: 'input', width: 200},
         {title: 'Meta Category', field: 'metaCategory', headerFilter: 'select', headerFilterParams: tableFilterObjs['metaCategory'], width: 100},
         {title: 'Category', field: 'category', headerFilter: 'select', headerFilterParams: tableFilterObjs['category'], width: 100},
@@ -47,7 +47,5 @@ function tagsFormatter(value){
     value = value || []
     return value.join(', ')
 }
-
-currencyFormatter = Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 2})
 
 module.exports = { renderTable }

@@ -65,6 +65,8 @@ function getIdFromCategory({name, type, extra=''}){
     return id + extra
 }
 
+currencyFormatter = Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 2})
+
 module.exports = {
     getAllMonthsBetween,
     monthAdd,
@@ -73,5 +75,6 @@ module.exports = {
     getTransactionYear,
     getSinglePeriod,
     displayTime,
-    getIdFromCategory
+    getIdFromCategory,
+    currencyFormatter
 }
