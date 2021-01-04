@@ -311,6 +311,11 @@ function alterIgnoreMetaCats(metaCat, add){
 
 function selChange(){
     for (sel of Object.keys(selections)){
+        try {
+            selections[sel] != d3.select('#' + sel + 'Sel').property('value')
+        } catch {
+            continue
+        }
         if (selections[sel] != d3.select('#' + sel + 'Sel').property('value')){
             selections[sel] = d3.select('#' + sel + 'Sel').property('value')
             if (sel == 'txType'){
@@ -321,10 +326,27 @@ function selChange(){
                 selections.trendEndTime = undefined
                 selections.singlePeriodTime = undefined
             }
-            let clone = ['metaCat', 'catChange'].includes(sel)
-            let transform = clone 
-            let filter = transform || ['txType', 'timeFrame', 'trendStartTime', 'trendEndTime', 'singlePeriodTime', 'plotType'].includes(sel)
-            renderPage({clone: clone, transform: transform, filter: filter})
+            let allLoadMonthsChanged = false
+            if (sel == 'trendStartTime'){
+                let newLoadMinMonthCandidate
+                if (selections.timeFrame == 'Month'){
+                    newLoadMinMonthCandidate = selections.trendStartTime
+                } else if (selections.timeFrame == 'Year'){
+                    newLoadMinMonthCandidate = selections.trendStartTime + '-01'
+                }
+                if (newLoadMinMonthCandidate < loadMinMonth){
+                    loadMinMonth = newLoadMinMonthCandidate
+                    allLoadMonths = utils.getAllMonthsBetween(loadMinMonth, maxMonth)
+                    allLoadMonthsChanged = true
+                    loadDataForAllLoadMonths()
+                }
+            }
+            if (!allLoadMonthsChanged){
+                let clone = ['metaCat', 'catChange'].includes(sel) || allLoadMonthsChanged
+                let transform = clone 
+                let filter = transform || ['txType', 'timeFrame', 'trendStartTime', 'trendEndTime', 'singlePeriodTime', 'plotType'].includes(sel)
+                renderPage({clone: clone, transform: transform, filter: filter})
+            }
             break
         }
     }
@@ -395,6 +417,10 @@ function generalSettingsSnapshot(doc) {
     allMonths = utils.getAllMonthsBetween(minMonth, maxMonth)
     allLoadMonths = utils.getAllMonthsBetween(loadMinMonth, maxMonth)
     allYears = utils.sortedUniqueArray(allMonths.map(m => m.slice(0, 4)))
+    loadDataForAllLoadMonths()
+}
+
+function loadDataForAllLoadMonths(){
     for (m of allLoadMonths){
         if (!Object.keys(monthTx).includes(m)){
             monthRefs[m] = db.doc('months/' + m)
