@@ -70,7 +70,7 @@ module.exports = (env, options) => {
   }
   return {
     entry: {
-        index: ["@babel/polyfill", './src/nav.js', './src/login-check.js', './src/index.js', './src/css/nav.css'],
+        index: ["@babel/polyfill", './src/nav.js', './src/login-check.js', './src/index.js', './src/css/nav.css', './src/css/modal.css'],
         login: ["@babel/polyfill", './src/nav.js', './src/login.js', './src/css/nav.css'],
         upload: ["@babel/polyfill", './src/nav.js', './src/login-check.js', './src/upload.js', './src/css/nav.css'],
         tos: ['./src/nav.js', './src/css/nav.css'],

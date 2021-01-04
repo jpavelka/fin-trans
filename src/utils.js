@@ -52,6 +52,19 @@ function displayTime(t, loc){
     }
 }
 
+function getIdFromCategory({name, type, extra=''}){
+    let id
+    name = name.replace('/', '__slash__').replace('&', '__amp__').replace(' ', '__space__')
+    if (['cat', 'category'].includes(type)){
+        id = name + 'Cat'
+    } else if (['metaCat', 'metaCategory'].includes(type)){
+        id = name + 'MetaCat'
+    } else if (['tag'].includes(type)){
+        id = name + 'Tag'
+    }
+    return id + extra
+}
+
 module.exports = {
     getAllMonthsBetween,
     monthAdd,
@@ -59,5 +72,6 @@ module.exports = {
     getTransactionMonth,
     getTransactionYear,
     getSinglePeriod,
-    displayTime
+    displayTime,
+    getIdFromCategory
 }

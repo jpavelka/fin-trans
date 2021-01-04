@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/jpavelka/fin-trans#readme",
   "dependencies": {
+    "csvtojson": "^2.0.10",
     "d3": "^6.3.1",
     "firebase": "^8.2.1",
     "firebaseui": "^4.7.1",

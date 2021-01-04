@@ -1,11 +1,12 @@
 const d3 = require('d3');
+const table = require('./table.js')
 const utils = require('./utils.js')
 
 function renderPlot({traces, selections, plotElementId}){
     d3.select('#' + plotElementId).selectAll("*").remove();
     layout = {
         hovermode: 'closest',
-        height: 500,
+        height: 600,
     }
     plotType = selections.plotType
     if (plotType == 'trend'){
@@ -45,6 +46,23 @@ function renderPlot({traces, selections, plotElementId}){
         }
     }
     new Plotly.newPlot(plotElementId, traces, layout)
+    document.getElementById(plotElementId).on('plotly_click', data => {
+        if (plotType == 'trend'){
+            let point = data.points[0]
+            let txsArray = point.data._txs
+            if (txsArray != undefined){
+                let txs = txsArray[point.pointIndex]
+                table.renderTable({tableTx: txs, tableElementId: 'txTable'})
+            }
+        } else if (plotType == 'singlePeriod'){
+            let point = data.points[0]
+            let txsArray = point.data._txs
+            if (txsArray != undefined){
+                let txs = txsArray[point.pointIndex]
+                table.renderTable({tableTx: txs, tableElementId: 'txTable'})
+            }
+        }
+    })
 }
 
 function getPlotData({txs, selections}){
@@ -70,18 +88,20 @@ function getPlotData({txs, selections}){
         const nameVals = utils.sortedUniqueArray(txs.map(t => t.nameVal))
         let yValTotal = {}
         for (nameVal of nameVals){
+            nameTxs = txs.filter(tx => tx.nameVal == nameVal)
             let trace = {
                 type: 'scatter',
                 name: nameVal,
                 x: [],
                 y: [],
-            }
-            nameTxs = txs.filter(tx => tx.nameVal == nameVal)
+                _txs: [],
+            }            
             for (xVal of xAxisVals){
                 xValTxs = nameTxs.filter(tx => tx.xAxisVal == xVal)
                 yVal = xValTxs.reduce((a, b) => a + b.amount, 0)
                 trace.x.push(utils.displayTime(xVal))
                 trace.y.push(yVal)
+                trace._txs.push(xValTxs)
                 yValTotal[xVal] = (yValTotal[xVal] || 0) + yVal
             }
             traces.push(trace)
@@ -90,7 +110,8 @@ function getPlotData({txs, selections}){
             type: 'scatter',
             name: 'Total',
             x: xAxisVals.map(x => utils.displayTime(x)),
-            y: xAxisVals.map(x => yValTotal[x])
+            y: xAxisVals.map(x => yValTotal[x]),
+            _txs: xAxisVals.map(x => txs.filter(tx => tx.xAxisVal == x))
         }].concat(traces)
         if (selections.includeAverages == 'Yes'){
             let avgTraces = []
@@ -121,12 +142,14 @@ function getPlotData({txs, selections}){
             type: 'bar',
             x: [],
             y: [],
+            _txs: []
         }
         for (xVal of xAxisVals){            
             xValTxs = txs.filter(tx => tx.xAxisVal == xVal)
             yVal = xValTxs.reduce((a, b) => a + b.amount, 0)
             trace.x.push(xVal)
             trace.y.push(yVal)
+            trace._txs.push(xValTxs)
         }        
         traces.push(trace)
     }

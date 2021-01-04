@@ -3,7 +3,8 @@ const d3 = require('d3');
 const _ = require('lodash');
 const plot = require('./plot.js')
 const table = require('./table.js')
-const utils = require('./utils.js')
+const utils = require('./utils.js');
+const { selection } = require("d3");
 const db = firebase.default.firestore();
 const generalSettingsRef = db.doc('settings/general');
 const categoryChangesRef = db.doc('settings/categoryChanges');
@@ -49,6 +50,9 @@ function renderPage({clone=true, transform=true, filter=true}){
     if (clone){
         for (m of allLoadMonths){
             let monthTxClone = _.cloneDeep(monthTx[m])
+            for ([i, tx] of monthTxClone.entries()){
+                tx.id = m + '_' + i
+            }
             allTx = allTx.concat(monthTxClone)
         }
     }
@@ -155,11 +159,21 @@ function addSelections({parentDiv}){
             selDiv.style('display', 'none')
         }
     }
+    addCatModal({parentElement: parentDiv})
+    addTagModal({parentElement: parentDiv})
+}
+
+function addTagModal({parentElement}){ 
+    parentElement.append('button').attr('id', 'tagModalBtn').html('Tag Detail')
+    let modalElement = parentElement.append('div').attr('id', 'tagModal').classed('modal', true)
+    let contentDiv = modalElement.append('div').classed('modal-content', true)
+    contentDiv.append('span').classed('modal-close', true).attr('id', 'tagModalClose').html('&times')
+    contentDiv.append('h2').html('Tag Detail')                              
     for (tag of usedTags){
-        let id = tag + 'TagSel'
-        let selDiv = parentDiv.append('div')
+        let id = utils.getIdFromCategory({name: tag, type: 'Tag', extra: 'Sel'})
+        let selDiv = contentDiv.append('div')
         selDiv.append('label').attr('for', id).text(tag)
-        let sel = selDiv.append('select').attr('id', id)
+        let sel = selDiv.append('select').attr('id', id).attr('tag', tag).on('change', (e) => tagSelectChange(e))
         sel.append('option').attr('value', 'can').html('Can have')
         let cannotOpt = sel.append('option').attr('value', 'cannot').html("Can't have")
         if (selections.forbiddenTags.includes(tag)){
@@ -169,6 +183,129 @@ function addSelections({parentDiv}){
         if (selections.requiredTags.includes(tag)){
             mustOpt.attr('selected', true)
         }
+    }
+    var modal = document.getElementById("tagModal");
+    var btn = document.getElementById("tagModalBtn");
+    var span = document.getElementById("tagModalClose");
+
+    btn.onclick = function() {
+        modal.style.display = "block";
+    }
+    span.onclick = function() {
+        modal.style.display = "none";
+        renderPage({clone: false, transform: false, filter: true})
+    }    
+}
+
+function tagSelectChange(e){
+    let id = e.target.id
+    let element = d3.select('#' + id)
+    let tag = element.attr('tag')
+    let value = element.property('value')
+    if (value == 'cannot'){
+        selections.forbiddenTags.push(tag)
+        selections.requiredTags = selections.requiredTags.filter(t => t != tag)
+    } else if (value == 'must'){
+        selections.forbiddenTags = selections.forbiddenTags.filter(t => t != tag)
+        selections.requiredTags.push(tag)
+    } else if (value == 'can'){
+        selections.forbiddenTags = selections.forbiddenTags.filter(t => t != tag)
+        selections.requiredTags = selections.requiredTags.filter(t => t != tag)
+    }
+}
+
+function addCatModal({parentElement}){
+    parentElement.append('button').attr('id', 'catModalBtn').html('Category Detail')
+    let modalElement = parentElement.append('div').attr('id', 'catModal').classed('modal', true)
+    let contentDiv = modalElement.append('div').classed('modal-content', true)
+    contentDiv.append('span').classed('modal-close', true).attr('id', 'catModalClose').html('&times')
+    contentDiv.append('h2').html('Category Detail')
+    metaCatSelDiv = contentDiv.append('div')
+    metaCatSelDiv.append('label').attr('for', 'metaCatSel').text('Category')
+    metaCatSel = metaCatSelDiv.append('select').attr('id', 'metaCatDetailSel').on('change', () => metaCatSelChange())
+    let firstMetaCat
+    for (metaCat of usedMetaCats){
+        if (metaCat != 'All'){
+            firstMetaCat = firstMetaCat || metaCat
+            metaCatSel.append('option').attr('value', metaCat).html(metaCat)
+            let checkboxId = utils.getIdFromCategory({name: metaCat, type: 'metaCat', extra: 'Checkbox'})
+            let boxDiv = contentDiv.append('div').attr('id', checkboxId + 'Div')
+            boxDiv.append('input').attr('type', 'checkbox').attr('id', checkboxId).property('checked', !selections.ignoreMetaCats.includes(metaCat)).attr('metacat', metaCat)
+                  .on('click', (e) => metaCatCheckboxChange(e))
+            boxDiv.append('label').attr('for', checkboxId).html('&nbsp;' + metaCat)
+            if (metaCat != firstMetaCat){
+                boxDiv.style('display', 'none')
+            }
+        }        
+    }
+    for (cat of usedCats){
+        let checkboxId = utils.getIdFromCategory({name: cat, type: 'cat', extra: 'Checkbox'})
+        let boxDiv = contentDiv.append('div').attr('id', checkboxId + 'Div').style('margin-left', '15px')
+        boxDiv.append('input').attr('type', 'checkbox').attr('id', checkboxId).property('checked', !selections.ignoreCats.includes(cat)).attr('cat', cat)
+              .on('click', (e) => catCheckboxChange(e))
+        boxDiv.append('label').attr('for', checkboxId).html('&nbsp;' + cat)
+        if (!metaCategories[firstMetaCat].includes(cat)){
+            boxDiv.style('display', 'none')
+        }
+    }
+    var modal = document.getElementById("catModal");
+    var btn = document.getElementById("catModalBtn");
+    var span = document.getElementById("catModalClose");
+
+    btn.onclick = function() {
+        modal.style.display = "block";
+    }
+    span.onclick = function() {
+        modal.style.display = "none";
+        renderPage({clone: false, transform: false, filter: true})
+    }
+}
+
+function metaCatSelChange(){
+    let changedMetaCat = d3.select('#metaCatDetailSel').property('value')
+    for (metaCat of usedMetaCats){
+        let checkboxId = utils.getIdFromCategory({name: metaCat, type: 'metaCat', extra: 'Checkbox'})
+        let boxDiv = d3.select('#' + checkboxId + 'Div')
+        boxDiv.style('display', metaCat == changedMetaCat ? 'block' : 'none')
+    }
+    for (cat of usedCats){
+        let checkboxId = utils.getIdFromCategory({name: cat, type: 'cat', extra: 'Checkbox'})
+        let boxDiv = d3.select('#' + checkboxId + 'Div')
+        boxDiv.style('display', metaCategories[changedMetaCat].includes(cat) ? 'block' : 'none')
+    }
+}
+
+function metaCatCheckboxChange(e){
+    let id = e.target.id
+    let element = d3.select('#' + id)
+    let metaCat = element.attr('metacat')
+    let checked = element.property('checked')
+    for (cat of metaCategories[metaCat]){
+        d3.select('#' + utils.getIdFromCategory({name: cat, type: 'cat', extra: 'Checkbox'})).property('checked', checked)
+        alterIgnoreCats(cat, !checked)
+    }
+    alterIgnoreMetaCats(metaCat, !checked)
+}
+
+function catCheckboxChange(e){
+    let id = e.target.id
+    let element = d3.select('#' + id)
+    let cat = element.attr('cat')
+    let checked = element.property('checked')
+    alterIgnoreCats(cat, !checked)
+}
+
+function alterIgnoreCats(cat, add){
+    selections.ignoreCats = selections.ignoreCats.filter(c => c != cat)
+    if (add){
+        selections.ignoreCats.push(cat)
+    }
+}
+
+function alterIgnoreMetaCats(metaCat, add){
+    selections.ignoreMetaCats = selections.ignoreMetaCats.filter(mc => mc != metaCat)
+    if (add){
+        selections.ignoreMetaCats.push(metaCat)
     }
 }
 
@@ -186,7 +323,7 @@ function selChange(){
             }
             let clone = ['metaCat', 'catChange'].includes(sel)
             let transform = clone 
-            let filter = transform || ['txType', 'timeFrame', 'trendStartTime', 'trendEndTime', 'singlePeriodTime'].includes(sel)
+            let filter = transform || ['txType', 'timeFrame', 'trendStartTime', 'trendEndTime', 'singlePeriodTime', 'plotType'].includes(sel)
             renderPage({clone: clone, transform: transform, filter: filter})
             break
         }
@@ -207,6 +344,8 @@ function filterTransactions(txs){
     usedMetaCats = ['All'].concat(utils.sortedUniqueArray(txs.map(tx => tx.metaCategory)))
     usedCats = utils.sortedUniqueArray(txs.map(tx => tx.category))
     usedTags = utils.sortedUniqueArray(txs.reduce((a, b) => a.concat((b.tags || [])), []))
+    let catsInMetaCats = Object.values(metaCategories).reduce((a, b) => a.concat(b), [])
+    metaCategories['Misc'] = usedCats.filter(cat => !catsInMetaCats.includes(cat))
     txs = txs.filter(tx => {
         return (tx.tags || []).filter(t => selections.forbiddenTags.includes(t)).length == 0
     })
@@ -215,6 +354,7 @@ function filterTransactions(txs){
         hasRequired.push(1)
         return Math.min(...hasRequired) == 1
     })
+    txs = txs.filter(tx => !selections.ignoreCats.includes(tx.category))
     return txs
 }
 

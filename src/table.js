@@ -6,13 +6,20 @@ function renderTable({tableTx, tableElementId}){
     var tableFilterObjs = {
         'account': {values: {}},
         'category': {values: {}},
-        'metaCategory': {values: {}}
+        'metaCategory': {values: {}},
+        'tags': {values: {}}
     }
     for (x of Object.keys(tableFilterObjs)){
-        let arr = utils.sortedUniqueArray(tableTx.map(d => d[x]))
-        for (y of arr){
-            tableFilterObjs[x].values[y] = y
-        }
+        if (tableTx.length > 0){
+            let arr = tableTx.filter(d => d[x] != undefined).map(d => d[x])
+            if (typeof tableTx[0][x] != 'string') {
+                arr = arr.reduce((a, b) => a.concat(b), [])
+            }
+            arr = utils.sortedUniqueArray(arr)
+            for (y of arr){
+                tableFilterObjs[x].values[y] = y
+            }
+        }   
     }
     var tableColumns = [
         {title: 'Date', field: 'date', headerFilter: 'input', width: 100},
@@ -21,7 +28,7 @@ function renderTable({tableTx, tableElementId}){
         {title: 'Meta Category', field: 'metaCategory', headerFilter: 'select', headerFilterParams: tableFilterObjs['metaCategory'], width: 100},
         {title: 'Category', field: 'category', headerFilter: 'select', headerFilterParams: tableFilterObjs['category'], width: 100},
         {title: 'Comment', field: 'comment', headerFilter: 'input', width: 200},        
-        {title: 'Tags', field: 'tags', formatter: cell => tagsFormatter(cell.getValue()), headerFilter: 'input', width: 100},
+        {title: 'Tags', field: 'tags', formatter: cell => tagsFormatter(cell.getValue()), headerFilter: 'input', headerFilterParams: tableFilterObjs['tags'], width: 100},
         {title: 'Account', field: 'account', headerFilter: 'input', width: 100, headerFilter: 'select', headerFilterParams: tableFilterObjs['account'], width: 100},
     ]
     var txTable = new Tabulator('#' + tableElementId, {
@@ -29,7 +36,10 @@ function renderTable({tableTx, tableElementId}){
         columns: tableColumns,
         initialSort: [{column: 'date', dir: 'desc'}],
         pagination: 'local',
-        paginationSize: 15
+        paginationSize: 15,
+        // cellEdited: function(cell){
+        //     console.log(cell)
+        // }
     })
 }
 

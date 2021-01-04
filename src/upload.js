@@ -1,6 +1,8 @@
 const firebase = require("firebase");
 const d3 = require('d3');
-const loginCheck = require('./login-check')
+const csv = require('csvtojson')
+const loginCheck = require('./login-check');
+const { tsv } = require("d3");
 const db = firebase.default.firestore();
 const monthsRef = db.collection("months");
 const generalSettingsRef = db.doc('settings/general');
@@ -18,7 +20,14 @@ function main(){
 }
 
 async function frOnload(e){
-    const fileData = JSON.parse(e.target.result)
+    let raw = e.target.result
+    let fileData
+    try{
+        fileData = JSON.parse(raw)
+    } catch {
+        fileData = await jsonFromCsv(raw)
+    }
+    fileData = sanitizeTxs(fileData)
     generalSettingsRef.onSnapshot(doc => generalSettingsSnapshot(doc));
     let oldMonthTx = {}
     let newMonthTx = {}
@@ -30,16 +39,43 @@ async function frOnload(e){
     fileData.map(d => {
         newMonthTx[getTransactionMonth(d)].push(d)
     })
-    for (m of allMonths){
-        let allTx = oldMonthTx[m].concat(newMonthTx[m])
-        monthsRef.doc(m).set({transactions: allTx}, {merge: true})
-            .then(() => {
-                window.alert('Transactions uploaded successfully!')
-            })
-            .catch((e) => {
-                window.alert('There was an issue uploading the transactions: ', e)
-            })
+    let upload = window.prompt('Are you sure you want to upload (yes/no)?')
+    if (upload.toLowerCase() == 'yes'){
+        for (m of allMonths){
+            let allTx = oldMonthTx[m].concat(newMonthTx[m])
+            monthsRef.doc(m).set({transactions: allTx}, {merge: true})
+                .then(() => {
+                    window.alert('Transactions uploaded successfully for month ' + m)
+                })
+                .catch((e) => {
+                    window.alert('There was an issue uploading the transactions: ', e)
+                })
+        }
+    } else {
+        window.alert('No transactions will be uploaded')
     }
+}
+
+function jsonFromCsv(s){
+    return csv().fromString(s).then(jsonObj => {
+        return jsonObj
+    })
+}
+
+function sanitizeTxs(obj){
+    const newObj = obj.map(x => {
+        return Object.fromEntries(
+            Object.entries(x).map(([k, v]) => [k.toLowerCase(), v])
+        )}
+    )
+    for (tx of newObj){
+        tx.date = new Date(tx.date).toISOString().slice(0, 10)
+        if (typeof tx.tags == 'string'){
+            tx.tags = tx.tags.split(',')
+        }
+        tx.tags = tx.tags.map(x => x.trim())
+    }
+    return newObj
 }
 
 
