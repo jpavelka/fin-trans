@@ -115,7 +115,7 @@ function getPlotData({txs, selections}){
         }].concat(traces)
         for (trace of traces){
             trace.hoverinfo = 'text'
-            trace.text = trace.y.map((y, i) => trace.name + '<br>' + trace.x[i] + '<br>' + utils.currencyFormatter.format(y))
+            trace.text = trace.y.map((y, i) => trace._name + '<br>' + trace.x[i] + '<br>' + utils.currencyFormatter.format(y))
             trace.name = trace._name + ' - ' + utils.currencyFormatter.format(
                 trace._txs.reduce((a, b) => a.concat(b), []).reduce((a, b) => a + parseFloat(b.amount), 0)
             )
