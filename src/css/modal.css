@@ -35,3 +35,8 @@
     text-decoration: none;
     cursor: pointer;
   }
+
+  .modal-finished {
+    margin:0 auto;
+    display:block;
+  }

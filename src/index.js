@@ -184,9 +184,11 @@ function addTagModal({parentElement}){
             mustOpt.attr('selected', true)
         }
     }
+    contentDiv.append('button').text('Finished').attr('id', 'tagModalFinished').classed('modal-finished', true)
     var modal = document.getElementById("tagModal");
     var btn = document.getElementById("tagModalBtn");
     var span = document.getElementById("tagModalClose");
+    var finishedBtn = document.getElementById("tagModalFinished")
 
     btn.onclick = function() {
         modal.style.display = "block";
@@ -194,7 +196,11 @@ function addTagModal({parentElement}){
     span.onclick = function() {
         modal.style.display = "none";
         renderPage({clone: false, transform: false, filter: true})
-    }    
+    }
+    finishedBtn.onclick = function() {
+        modal.style.display = "none";
+        renderPage({clone: false, transform: false, filter: true})
+    }
 }
 
 function tagSelectChange(e, t){
@@ -248,14 +254,21 @@ function addCatModal({parentElement}){
             boxDiv.style('display', 'none')
         }
     }
+    contentDiv.append('button').text('Finished').attr('id', 'catModalFinished').classed('modal-finished', true)    
+
     var modal = document.getElementById("catModal");
     var btn = document.getElementById("catModalBtn");
     var span = document.getElementById("catModalClose");
+    var finishedBtn = document.getElementById("catModalFinished")
 
     btn.onclick = function() {
         modal.style.display = "block";
     }
     span.onclick = function() {
+        modal.style.display = "none";
+        renderPage({clone: false, transform: false, filter: true})
+    }
+    finishedBtn.onclick = function() {
         modal.style.display = "none";
         renderPage({clone: false, transform: false, filter: true})
     }
