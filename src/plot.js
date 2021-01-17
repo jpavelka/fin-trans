@@ -73,6 +73,7 @@ function getPlotData({txs, selections}){
     let traces = []
     const colors = d3.schemeCategory10
     if (plotType == 'trend'){
+        let xAxisVals = utils.getAllTimesBetween(selections.trendStartTime, selections.trendEndTime)
         if (timeFrame == 'Month'){
             for (tx of txs){
                 tx.xAxisVal = utils.getTransactionMonth(tx)
@@ -84,7 +85,6 @@ function getPlotData({txs, selections}){
                 tx.nameVal = tx[catFilterKey]
             }
         }
-        const xAxisVals = utils.sortedUniqueArray(txs.map(t => t.xAxisVal))
         const nameVals = utils.sortedUniqueArray(txs.map(t => t.nameVal))
         let yValTotal = {}
         for (nameVal of nameVals){

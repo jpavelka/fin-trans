@@ -13,6 +13,29 @@ function getAllMonthsBetween(min, max){
     return allMonthsBetween
 }
 
+function getAllYearsBetween(min, max){
+    let allYearsBetween = []
+    let i = 0
+    while (true){
+        nextYear = parseInt(min) + i
+        if (nextYear <= max){
+            allYearsBetween.push(nextYear)
+        } else {
+            break
+        }
+        i += 1
+    }
+    return allYearsBetween
+}
+
+function getAllTimesBetween(min, max){
+    if (String(min).lenght == 4){
+        return getAllYearsBetween(min, max)
+    } else {
+        return getAllMonthsBetween(min, max)
+    }
+}
+
 function monthAdd(month, n){
     m = new Date(month + '-15')
     m.setMonth(m.getMonth() + n)
@@ -69,6 +92,8 @@ currencyFormatter = Intl.NumberFormat('en-US', {style: 'currency', currency: 'US
 
 module.exports = {
     getAllMonthsBetween,
+    getAllYearsBetween,
+    getAllTimesBetween,
     monthAdd,
     sortedUniqueArray,
     getTransactionMonth,

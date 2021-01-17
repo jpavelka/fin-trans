@@ -170,10 +170,10 @@ function addTagModal({parentElement}){
     contentDiv.append('span').classed('modal-close', true).attr('id', 'tagModalClose').html('&times')
     contentDiv.append('h2').html('Tag Detail')                              
     for (tag of usedTags){
-        let id = utils.getIdFromCategory({name: tag, type: 'Tag', extra: 'Sel'})
+        let id = utils.getIdFromCategory({name: tag, type: 'tag', extra: 'Sel'})
         let selDiv = contentDiv.append('div')
         selDiv.append('label').attr('for', id).text(tag)
-        let sel = selDiv.append('select').attr('id', id).attr('tag', tag).on('change', (e) => tagSelectChange(e))
+        let sel = selDiv.append('select').attr('id', id).attr('tag', tag).on('change', (e) => tagSelectChange(e, tag))
         sel.append('option').attr('value', 'can').html('Can have')
         let cannotOpt = sel.append('option').attr('value', 'cannot').html("Can't have")
         if (selections.forbiddenTags.includes(tag)){
@@ -197,7 +197,7 @@ function addTagModal({parentElement}){
     }    
 }
 
-function tagSelectChange(e){
+function tagSelectChange(e, t){
     let id = e.target.id
     let element = d3.select('#' + id)
     let tag = element.attr('tag')
@@ -395,6 +395,8 @@ function transformTransactions(transactions){
         tx.metaCategory = metaCatInverse[tx.category] || 'Misc'
         tx.type = tx.amount < 0 ? 'expense' : 'income'
         tx.amount = Math.abs(tx.amount)
+        tx.tags = tx.tags || []
+        tx.tags = tx.tags.filter(t => t.trim() != '')
     }
     return transactions.filter(tx => tx.metaCategory != 'Ignore')
 }
