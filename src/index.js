@@ -74,75 +74,88 @@ function renderPage({clone=true, transform=true, filter=true}){
 
 function addSelections({parentDiv}){
     allTimeValues = selections.timeFrame == 'Month' ? allMonths : allYears
+    const numSelRows = 3
+    for (i = 1; i <= numSelRows; i += 1){
+        parentDiv.append('div').attr('id', 'selsRow' + i)
+    }
     let selSetup = [
         {
             id: 'metaCat',
             labelText: 'Category Groups',
             options: [
                 {value: 'v1', text: 'v1'}
-            ]
+            ],
+            row: 1
         }, {
             id: 'plotType',
             labelText: 'Plot Type',
             options: [
                 {value: 'trend', text: 'Trend'},
                 {value: 'singlePeriod', text: 'Single Period'}
-            ]
+            ],
+            row: 1
         }, {
             id: 'txType',
             labelText: 'Transaction Type',
             options: [
                 {value: 'expense', text: 'Expense'},
                 {value: 'income', text: 'Income'}
-            ]
+            ],
+            row: 1
         }, {
             id: 'cat',
             labelText: 'Category',
             options: usedMetaCats.map(x => {
                 return {value: x, text: x}
-            })
+            }),
+            row: 1
         }, {
             id: 'timeFrame',
             labelText: 'Time Frame',
             options: [
                 {value: 'Month', text: 'Month'},
                 {value: 'Year', text: 'Year'},
-            ]
+            ],
+            row: 2
         }, {
             id: 'trendStartTime',
             condition: selections.plotType == 'trend',
             labelText: 'Start ' + selections.timeFrame,
             options: allTimeValues.map(m => {
                 return {value: m, text: m}
-            })
+            }),
+            row: 2
         }, {
             id: 'trendEndTime',
             condition: selections.plotType == 'trend',
             labelText: 'End ' + selections.timeFrame,
             options: allTimeValues.map(m => {
                 return {value: m, text: m}
-            })
+            }),
+            row: 2
         }, {
             id: 'singlePeriodTime',
             condition: selections.plotType == 'singlePeriod',
             labelText: selections.timeFrame,
             options: allTimeValues.map(m => {
                 return {value: m, text: m}
-            })
+            }),
+            row: 2
         }, {
             id: 'includeAverages',
             condition: selections.plotType == 'trend',
             labelText: 'Include Averages',
             options: ['Yes', 'No'].map(x => {
                 return {value: x, text: x}
-            })
+            }),
+            row: 3
         }
     ]
     for (setup of selSetup){
         let id = setup.id + 'Sel'
-        let selDiv = parentDiv.append('div')
-        selDiv.append('label').attr('for', id).text(setup.labelText)
-        let sel = selDiv.append('select').attr('id', id).on('change', () => {
+        let selDiv = d3.select('#selsRow' + setup.row).append('span')
+        let labelDiv = selDiv.append('label').attr('for', id).classed('selLabel', true).text(setup.labelText)
+        let sel = labelDiv.append('select').attr('id', id).classed('selSelect', true).on('change', () => {
             selChange()
         })
         for (op of setup.options){
@@ -164,7 +177,7 @@ function addSelections({parentDiv}){
 }
 
 function addTagModal({parentElement}){ 
-    parentElement.append('button').attr('id', 'tagModalBtn').html('Tag Detail')
+    parentElement.append('button').classed('selButton', true).attr('id', 'tagModalBtn').html('Tag Detail')
     let modalElement = parentElement.append('div').attr('id', 'tagModal').classed('modal', true)
     let contentDiv = modalElement.append('div').classed('modal-content', true)
     contentDiv.append('span').classed('modal-close', true).attr('id', 'tagModalClose').html('&times')
@@ -221,7 +234,7 @@ function tagSelectChange(e, t){
 }
 
 function addCatModal({parentElement}){
-    parentElement.append('button').attr('id', 'catModalBtn').html('Category Detail')
+    parentElement.append('button').classed('selButton', true).attr('id', 'catModalBtn').html('Category Detail')
     let modalElement = parentElement.append('div').attr('id', 'catModal').classed('modal', true)
     let contentDiv = modalElement.append('div').classed('modal-content', true)
     contentDiv.append('span').classed('modal-close', true).attr('id', 'catModalClose').html('&times')
