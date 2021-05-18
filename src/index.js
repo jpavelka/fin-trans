@@ -458,7 +458,13 @@ function loadDataForAllLoadMonths(){
 }
 
 function monthSnapshot(doc){
-    monthTx[doc.id] = doc.data().transactions
+    let transactions = doc.data().transactions;
+    for (tx of transactions){
+        if (Object.keys(tx).includes('comments')){
+            tx.comment = tx.comments
+        }
+    }
+    monthTx[doc.id] = transactions;
     for (m of allLoadMonths){
         if (!Object.keys(monthTx).includes(m)){
             return
