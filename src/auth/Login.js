@@ -13,7 +13,6 @@ const Login = ({ history }) => {
     auth
       .signInWithPopup(googleProvider)
       .then((res) => {
-        console.log(res.user);
         history.push("/");
       })
       .catch((error) => {

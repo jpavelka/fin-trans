@@ -3,54 +3,71 @@ import { app, db } from "../firebase";
 import dayjs from "dayjs";
 
 export const AuthContext = React.createContext();
+const monthFormat = "YYYY-MM";
 
 export const AuthProvider = ({ children }) => {
-  const [minMonth, setMinMonth] = useState(dayjs().add(-11, "month"));
-  const [maxMonth, setMaxMonth] = useState(dayjs());
+  const [minLoadMonth, setMinLoadMonth] = useState();
+  const [maxLoadMonth, setMaxLoadMonth] = useState();
   const [txData, setTxData] = useState();
+  const [settings, setSettings] = useState({});
   const [currentUser, setCurrentUser] = useState();
   useEffect(() => {
     app.auth().onAuthStateChanged((user) => {
       if (!!user) {
         setCurrentUser(user);
-        const now = dayjs();
-        let month = minMonth;
-        while (month < now) {
-          const monthStr = month.format("YYYY-MM");
-          if (!Object.keys(txData || {}).includes(monthStr)) {
-            db.collection("months")
-              .doc(monthStr)
+        for (const k of ["categoryChanges", "metaCategories", "general"]) {
+          if (!Object.keys(settings).includes(k)) {
+            db.collection("settings")
+              .doc(k)
               .onSnapshot((doc) => {
-                const data = doc.data() || {};
-                setTxData((d) => {
+                setSettings((s) => {
                   let newData = {};
-                  newData[monthStr] = data.transactions || [];
-                  return { ...d, ...newData };
+                  newData[k] = doc.data();
+                  return { ...s, ...newData };
                 });
               });
           }
-          month = month.add(1, "month");
+        }
+        if (!!settings.general) {
+          if (minLoadMonth !== settings.general.minMonth) {
+            setMinLoadMonth(
+              dayjs(settings.general.maxMonth)
+                .add(-11, "month")
+                .format(monthFormat)
+            );
+            setMaxLoadMonth(
+              dayjs(settings.general.maxMonth).format(monthFormat)
+            );
+          }
+          let month = dayjs(minLoadMonth + '-01').format(monthFormat);
+          while (month <= maxLoadMonth) {
+            const m = month;
+            if (!Object.keys(txData || {}).includes(m)) {
+              db.collection("months")
+                .doc(m)
+                .onSnapshot((doc) => {
+                  const data = doc.data() || {};
+                  setTxData((d) => {
+                    let newData = {};
+                    newData[m] = data.transactions || [];
+                    return { ...d, ...newData };
+                  });
+                });
+            }
+            month = dayjs(month + '-01').add(1, "month").format(monthFormat);
+          }
         }
       }
     });
-  }, [minMonth, txData]);
-  useEffect(() => {
-    const maxMonthStr = maxMonth.format("YYYY-MM");
-    if (Object.keys(txData || {}).includes(maxMonthStr)) {
-      if (txData[maxMonthStr].length === 0) {
-        setMaxMonth((m) => m.add(-1, "month"));
-        setMinMonth((m) => m.add(-1, "month"));
-      }
-    }
-  }, [txData, maxMonth]);
-  console.log(minMonth.format("YYYY-MM"), maxMonth.format("YYYY-MM"));
+  }, [minLoadMonth, maxLoadMonth, txData, settings, setMinLoadMonth]);
   return (
     <AuthContext.Provider
       value={{
         currentUser,
         txData,
-        setMinMonth,
+        setMinLoadMonth,
         setCurrentUser,
+        settings,
       }}
     >
       {children}

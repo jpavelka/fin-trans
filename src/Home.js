@@ -1,9 +1,11 @@
 import { useContext } from "react";
 import { AuthContext } from "./auth/Auth";
 import { app } from "./firebase";
+import Table from "./table/Table";
 
 const Home = ({ history }) => {
-  const { currentUser, setCurrentUser, txData } = useContext(AuthContext);
+  const { currentUser, setCurrentUser, txData } =
+    useContext(AuthContext);
   if (!!!currentUser) {
     history.push("/login");
   }
@@ -16,16 +18,16 @@ const Home = ({ history }) => {
     setCurrentUser();
     history.push("/login");
   };
+  let allTx = [];
+  if (!!txData) {
+    for (const k of Object.keys(txData)) {
+      allTx = allTx.concat(txData[k]);
+    }
+  }
   return (
     <>
       <button onClick={signOutFunc}>Sign Out</button>
-      <div>
-        {JSON.stringify(
-          Object.keys(txData || {})
-            .filter((x) => txData[x].length > 0)
-            .sort()
-        )}
-      </div>
+      <Table transactions={allTx} />
     </>
   );
 };
