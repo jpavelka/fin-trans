@@ -32,14 +32,14 @@ export const AuthProvider = ({ children }) => {
           if (minLoadMonth !== settings.general.minMonth) {
             setMinLoadMonth(
               dayjs(settings.general.maxMonth)
-                .add(-11, "month")
+                .add(-2, "month")
                 .format(monthFormat)
             );
             setMaxLoadMonth(
               dayjs(settings.general.maxMonth).format(monthFormat)
             );
           }
-          let month = dayjs(minLoadMonth + '-01').format(monthFormat);
+          let month = dayjs(minLoadMonth + "-01").format(monthFormat);
           while (month <= maxLoadMonth) {
             const m = month;
             if (!Object.keys(txData || {}).includes(m)) {
@@ -54,7 +54,9 @@ export const AuthProvider = ({ children }) => {
                   });
                 });
             }
-            month = dayjs(month + '-01').add(1, "month").format(monthFormat);
+            month = dayjs(month + "-01")
+              .add(1, "month")
+              .format(monthFormat);
           }
         }
       }
@@ -74,3 +76,13 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+const signOutFunc = () => {
+  const confirmed = window.confirm("Are you sure you want to sign out?");
+  if (!confirmed) {
+    return;
+  }
+  app.auth().signOut();
+};
+
+export {signOutFunc};
