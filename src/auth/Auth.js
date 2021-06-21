@@ -1,3 +1,4 @@
+import firebase from "firebase/app";
 import React, { useEffect, useState } from "react";
 import { app, db } from "../firebase";
 import dayjs from "dayjs";
@@ -32,7 +33,7 @@ export const AuthProvider = ({ children }) => {
           if (minLoadMonth !== settings.general.minMonth) {
             setMinLoadMonth(
               dayjs(settings.general.maxMonth)
-                .add(-2, "month")
+                .add(-4, "month")
                 .format(monthFormat)
             );
             setMaxLoadMonth(
@@ -40,23 +41,34 @@ export const AuthProvider = ({ children }) => {
             );
           }
           let month = dayjs(minLoadMonth + "-01").format(monthFormat);
+          let listenMonths = [];
           while (month <= maxLoadMonth) {
             const m = month;
             if (!Object.keys(txData || {}).includes(m)) {
-              db.collection("months")
-                .doc(m)
-                .onSnapshot((doc) => {
+              listenMonths.push(m);
+            }
+            month = dayjs(month + "-01")
+              .add(1, "month")
+              .format(monthFormat);
+          }
+          if (listenMonths.length > 0) {
+            db.collection("months")
+              .where(
+                firebase.firestore.FieldPath.documentId(),
+                "in",
+                listenMonths
+              )
+              .onSnapshot((query) => {
+                for (let doc of query.docs) {
+                  const m = doc.id;
                   const data = doc.data() || {};
                   setTxData((d) => {
                     let newData = {};
                     newData[m] = data.transactions || [];
                     return { ...d, ...newData };
                   });
-                });
-            }
-            month = dayjs(month + "-01")
-              .add(1, "month")
-              .format(monthFormat);
+                }
+              });
           }
         }
       }
@@ -85,4 +97,4 @@ const signOutFunc = () => {
   app.auth().signOut();
 };
 
-export {signOutFunc};
+export { signOutFunc };
