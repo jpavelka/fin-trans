@@ -2,13 +2,9 @@ import React from "react";
 import SinglePeriodPlot from "./SinglePeriodPlot";
 import TrendPlot from "./TrendPlot";
 
-const Plot = ({
-  plotTx,
-  selectionValues,
-  setTableFilters
-}) => {
+const Plot = ({ plotTx, selectionValues, setTableFilters }) => {
   return (
-    <div style={{height: '550px'}}>
+    <div style={{ height: "550px" }}>
       {selectionValues.plotType === "trend" ? (
         <TrendPlot
           plotTx={plotTx}
@@ -21,7 +17,14 @@ const Plot = ({
           setTableFilters={setTableFilters}
         />
       ) : (
-        <SinglePeriodPlot plotTx={plotTx} />
+        <SinglePeriodPlot
+          plotTx={plotTx}
+          txType={selectionValues.txType}
+          metaCategory={selectionValues.metaCategory}
+          timeFrame={selectionValues.timeFrame}
+          time={selectionValues.maxTime}
+          setTableFilters={setTableFilters}
+        />
       )}
     </div>
   );

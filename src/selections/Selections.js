@@ -105,9 +105,9 @@ const Selections = ({
       </div>
     );
   });
-  if (selectionValues.plotType === "trend"){
-    content.push((
-      <div style={{margin: '5pt 10pt'}}>
+  if (selectionValues.plotType === "trend") {
+    content.push(
+      <div style={{ margin: "5pt 10pt" }}>
         {`Include Avg. `}
         <input
           type="checkbox"
@@ -121,14 +121,10 @@ const Selections = ({
           }
         />
       </div>
-    ))
-    content.push(<hr />)
+    );
   }
-  return (
-    <>
-      {content}
-    </>
-  );
+  content.push(<hr />);
+  return <>{content}</>;
 };
 
 const DropdownFromList = ({

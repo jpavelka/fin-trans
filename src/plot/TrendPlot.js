@@ -37,6 +37,7 @@ const TrendPlot = ({
     minTime: minTime,
     maxTime: maxTime,
     txType: txType,
+    metaCategory: metaCategory
   });
   return (
     <Plot
@@ -53,7 +54,7 @@ const TrendPlot = ({
           date: dateFormatInv({ d: e.points[0].x, timeFrame: timeFrame }),
         };
         if (data._cat !== "_all") {
-          filters[data._groupOn] = data._cat;
+          filters[groupOn] = data._cat;
         }
         setTableFilters(filters);
       }}
@@ -61,10 +62,11 @@ const TrendPlot = ({
   );
 };
 
-const getPlotLayout = ({ timeFrame, minTime, maxTime, txType }) => {
+const getPlotLayout = ({ timeFrame, minTime, maxTime, txType, 
+  metaCategory }) => {
   const title = `${timeFrame === "month" ? "Month" : "Year"}ly Trends - ${
     txType === "expense" ? "Expenses" : "Income"
-  }`;
+  }${metaCategory === '_all' ? '' : ' - ' + metaCategory}`;
   const subTitle = `${dateFormat({
     d: minTime,
     timeFrame: timeFrame,

@@ -100,6 +100,14 @@ const Home = ({ history }) => {
       !selectionValues.inactiveMetaCategories.includes(tx.metaCategory)
     );
   });
+  allTx = allTx.filter((tx) => {
+    return selectionValues.plotType === 'trend' ? (
+      tx[selectionValues.timeFrame] >= selectionValues.minTime &&
+      tx[selectionValues.timeFrame] <= selectionValues.maxTime
+    ) : (
+      tx[selectionValues.timeFrame] === selectionValues.maxTime
+    )
+  })
   const allMetaCats = sortedUniqueArray({
     array: allTx.map((tx) => tx.metaCategory),
   });
