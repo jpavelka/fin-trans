@@ -8,7 +8,7 @@ export const SinglePeriodPlot = ({ plotTx, metaCategory, timeFrame, time }) => {
   //   groupOn: [groupOn, timeFrame],
   //   includeAll: [true, false],
   // });
-  return <div></div>;
+  return <div></div>
 };
 
 export default SinglePeriodPlot

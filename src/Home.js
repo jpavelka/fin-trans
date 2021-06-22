@@ -1,64 +1,118 @@
 import { useContext, useState, useEffect } from "react";
 import { AuthContext, signOutFunc } from "./auth/Auth";
+import { Accordion } from "react-bootstrap";
 import Table from "./table/Table";
 import Plot from "./plot/Plot";
-import transformTransactions from "./transactionUtils/transform";
+import Selections from "./selections/Selections";
+import transformTransactions from "./utils/transactions";
+import { sortedUniqueArray, allTimesBetween } from "./utils/utils";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const Home = ({ history }) => {
-  const { currentUser, setCurrentUser, txData, settings } =
-    useContext(AuthContext);
-  const [metaCatVersion, setMetaCatVersion] = useState(
-    (settings.metaCategories || {})._default
-  );
-  const [categoryChangeVersion, setCategoryChangeVersion] = useState(
-    (settings.categoryChanges || {})._default
-  );
-  const [txType, setTxType] = useState("expense");
-  const [inactiveCategories, setInactiveCategories] = useState([]);
-  const [inactiveMetaCategories, setInactiveMetaCategories] = useState([]);
-  const [plotType, setPlotType] = useState("trend");
-  const [metaCategory, setMetaCategory] = useState("_all");
-  const [timeFrame, setTimeFrame] = useState("month");
+  const {
+    currentUser,
+    setCurrentUser,
+    txData,
+    settings,
+    minLoadMonth,
+    maxLoadMonth,
+    setMinLoadMonth,
+    loadingData,
+  } = useContext(AuthContext);
+  const [selectionValues, setSelectionValues] = useState({
+    metaCatVersion: undefined,
+    categoryChangeVersion: undefined,
+    txType: "expense",
+    inactiveCategories: [],
+    inactiveMetaCategories: [],
+    plotType: "trend",
+    metaCategory: "_all",
+    timeFrame: "month",
+    minTime: undefined,
+    maxTime: undefined,
+    includeAverages: true,
+  });
+  const [tableFilters, setTableFilters] = useState({});
+  const [waitForLoad, setWaitForLoad] = useState(loadingData);
   useEffect(() => {
-    if (!!settings) {
-      setMetaCatVersion((v) => {
-        return !!v ? v : (settings.metaCategories || {})._default;
-      });
-      setCategoryChangeVersion((v) => {
-        return !!v ? v : (settings.categoryChanges || {})._default;
+    setWaitForLoad(loadingData);
+  }, [loadingData]);
+  useEffect(() => {
+    if (!!selectionValues.minTime) {
+      setMinLoadMonth((m) => {
+        const newTime =
+          selectionValues.minTime.length === 4
+            ? selectionValues.minTime + "-01"
+            : selectionValues.minTime;
+        return newTime < m ? newTime : m;
       });
     }
-  }, [settings]);
-  const [minTime, setMinTime] = useState("2021-01");
-  const [maxTime, setMaxTime] = useState("2021-05");
-  const [tableFilters, setTableFilters] = useState({});
+  }, [selectionValues.minTime, setMinLoadMonth]);
+  useEffect(() => {
+    if (!!settings && !!minLoadMonth && !!maxLoadMonth) {
+      setSelectionValues((v) => {
+        let newObj = {};
+        if (!!!v.metaCatVersion) {
+          newObj.metaCatVersion = (settings.metaCategories || {})._default;
+        }
+        if (!!!v.categoryChanges) {
+          newObj.categoryChangeVersion = (
+            settings.categoryChanges || {}
+          )._default;
+        }
+        if (!!!v.minTime) {
+          newObj.minTime = minLoadMonth;
+        }
+        if (!!!v.maxTime) {
+          newObj.maxTime = maxLoadMonth;
+        }
+        return { ...v, ...newObj };
+      });
+    }
+  }, [settings, minLoadMonth, maxLoadMonth]);
+  let allTx = [];
+  for (const k of Object.keys(txData || {})) {
+    allTx = allTx.concat(
+      transformTransactions({
+        transactions: txData[k],
+        metaCategories: settings.metaCategories[selectionValues.metaCatVersion],
+        categoryChanges:
+          settings.categoryChanges[selectionValues.categoryChangeVersion],
+      })
+    );
+  }
   if (!!!currentUser) {
     history.push("/login");
   }
-  if (!!!settings || !!!metaCatVersion || !!!categoryChangeVersion) {
+  if (
+    !!!settings ||
+    !!!selectionValues.metaCatVersion ||
+    !!!selectionValues.categoryChangeVersion
+  ) {
     return <div>Loading...</div>;
   }
-  let allTx = [];
-  if (!!txData) {
-    for (const k of Object.keys(txData)) {
-      allTx = allTx.concat(
-        transformTransactions({
-          transactions: txData[k],
-          metaCategories: settings.metaCategories[metaCatVersion],
-          categoryChanges: settings.categoryChanges[categoryChangeVersion],
-        })
-      );
-    }
-  }
   allTx = allTx.filter((tx) => {
-    return tx.type === txType &&
-      tx[timeFrame] >= minTime &&
-      tx[timeFrame] <= maxTime &&
-      !inactiveCategories.includes(tx.category) &&
-      !inactiveMetaCategories.includes(tx.metaCategory) &&
-      metaCategory === "_all"
+    return (
+      tx[selectionValues.timeFrame] >= selectionValues.minTime &&
+      tx[selectionValues.timeFrame] <= selectionValues.maxTime &&
+      tx.type === selectionValues.txType &&
+      !selectionValues.inactiveCategories.includes(tx.category) &&
+      !selectionValues.inactiveMetaCategories.includes(tx.metaCategory)
+    );
+  });
+  const allMetaCats = sortedUniqueArray({
+    array: allTx.map((tx) => tx.metaCategory),
+  });
+  allTx = allTx.filter((tx) => {
+    return selectionValues.metaCategory === "_all"
       ? true
-      : tx.metaCategory === metaCategory;
+      : tx.metaCategory === selectionValues.metaCategory;
+  });
+  const allTimes = allTimesBetween({
+    minTime: settings.general.minMonth,
+    maxTime: settings.general.maxMonth,
+    timeFrame: selectionValues.timeFrame,
+    reverse: true,
   });
   return (
     <>
@@ -71,17 +125,34 @@ const Home = ({ history }) => {
       >
         Sign Out
       </button>
-        <Plot
-          plotType={plotType}
-          plotTx={allTx}
-          txType={txType}
-          metaCategory={metaCategory}
-          timeFrame={timeFrame}
-          minTime={minTime}
-          maxTime={maxTime}
-          setTableFilters={setTableFilters}
-        />
-      <Table transactions={allTx} filterValues={tableFilters}/>
+      <Selections
+        selectionValues={selectionValues}
+        setSelectionValues={setSelectionValues}
+        allMetaCats={allMetaCats}
+        allTimes={allTimes}
+      />
+      {waitForLoad ? (
+        <h3 style={{ textAlign: "center" }}>Waiting for data to load...</h3>
+      ) : (
+        <>
+          <Accordion defaultActiveKey="0">
+            <Accordion.Toggle eventKey="0">Toggle Plot</Accordion.Toggle>
+            <Accordion.Collapse eventKey="0">
+              <Plot
+                plotTx={allTx}
+                selectionValues={selectionValues}
+                setTableFilters={setTableFilters}
+              />
+            </Accordion.Collapse>
+          </Accordion>
+          <Accordion defaultActiveKey="0">
+            <Accordion.Toggle eventKey="0">Toggle Table</Accordion.Toggle>
+            <Accordion.Collapse eventKey="0">
+              <Table transactions={allTx} filterValues={tableFilters} />
+            </Accordion.Collapse>
+          </Accordion>
+        </>
+      )}
     </>
   );
 };

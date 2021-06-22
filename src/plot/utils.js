@@ -1,12 +1,6 @@
 import dayjs from "dayjs";
-
-export const sortedUniqueArray = ({ array, reverse = false }) => {
-  let arr = Array.from(new Set(array)).sort();
-  if (reverse) {
-    return arr.reverse();
-  }
-  return arr;
-};
+import color from "color";
+import { sortedUniqueArray } from "../utils/utils";
 
 export const getGroupedData = ({ allTx, groupOn, includeAll }) => {
   const [thisGroupOn, nextGroupOn] = Array.isArray(groupOn)
@@ -51,21 +45,46 @@ export const incrementTime = ({ timeFrame, time }) => {
 };
 
 export const currencyFormat = (x) => {
-  var formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  var formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   });
   return formatter.format(x);
-}
+};
 
-export const dateFormat = ({d, timeFrame}) => {
-  return timeFrame === 'month' ? (
-    dayjs(d + '-01').format('MMM YYYY')
-  ) : d
-}
+export const dateFormat = ({ d, timeFrame }) => {
+  return timeFrame === "month" ? dayjs(d + "-01").format("MMM YYYY") : d;
+};
 
-export const dateFormatInv = ({d, timeFrame}) => {
-  return timeFrame === 'month' ? (
-    dayjs('1 ' + d).format('YYYY-MM')
-  ) : d
-}
+export const dateFormatInv = ({ d, timeFrame }) => {
+  return timeFrame === "month" ? dayjs("1 " + d).format("YYYY-MM") : d;
+};
+
+export const plotColors = [
+  "#1f77b4",
+  "#ff7f0e",
+  "#2ca02c",
+  "#d62728",
+  "#9467bd",
+  "#8c564b",
+  "#e377c2",
+  "#7f7f7f",
+  "#bcbd22",
+  "#17becf",
+];
+
+export const addColors = (traces) => {
+  let i = 0;
+  for (const trace of traces) {
+    trace.line = trace.line || {};
+    let shading = 0;
+    if (trace._isAvg) {
+      i -= 1;
+      shading = 0.5;
+    }
+    const c = color(plotColors[i % plotColors.length]);
+    trace.line.color = c.fade(shading).rgb().string();
+    i += 1;
+  }
+  return traces;
+};

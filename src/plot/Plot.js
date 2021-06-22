@@ -3,31 +3,26 @@ import SinglePeriodPlot from "./SinglePeriodPlot";
 import TrendPlot from "./TrendPlot";
 
 const Plot = ({
-  plotType,
   plotTx,
-  txType,
-  metaCategory,
-  timeFrame,
-  minTime,
-  maxTime,
+  selectionValues,
   setTableFilters
 }) => {
   return (
-    <div style={{width: '90vw', height: '500px'}}>
-      {plotType === "trend" ? (
+    <div style={{height: '550px'}}>
+      {selectionValues.plotType === "trend" ? (
         <TrendPlot
           plotTx={plotTx}
-          txType={txType}
-          metaCategory={metaCategory}
-          timeFrame={timeFrame}
-          minTime={minTime}
-          maxTime={maxTime}
+          txType={selectionValues.txType}
+          metaCategory={selectionValues.metaCategory}
+          timeFrame={selectionValues.timeFrame}
+          minTime={selectionValues.minTime}
+          maxTime={selectionValues.maxTime}
+          includeAverages={selectionValues.includeAverages}
           setTableFilters={setTableFilters}
         />
       ) : (
         <SinglePeriodPlot plotTx={plotTx} />
       )}
-      ;
     </div>
   );
 };

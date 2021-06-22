@@ -7,7 +7,6 @@ const App = () => {
   return (
     <AuthProvider>
       <Router>
-        {/* <ScrollToTop /> */}
         {/* <Menu /> */}
         <Switch>
           <Route exact path="/" component={Home} />
