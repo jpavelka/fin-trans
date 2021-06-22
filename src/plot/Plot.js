@@ -13,7 +13,6 @@ const Plot = ({ plotTx, selectionValues, setTableFilters }) => {
           timeFrame={selectionValues.timeFrame}
           minTime={selectionValues.minTime}
           maxTime={selectionValues.maxTime}
-          includeAverages={selectionValues.includeAverages}
           setTableFilters={setTableFilters}
         />
       ) : (

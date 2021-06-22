@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Plot from "react-plotly.js";
 import {
   getGroupedData,
@@ -15,9 +16,9 @@ const TrendPlot = ({
   timeFrame,
   minTime,
   maxTime,
-  includeAverages,
   setTableFilters,
 }) => {
+  const [includeAverages, setIncludeAverages] = useState(true);
   const groupOn = metaCategory === "_all" ? "metaCategory" : "category";
   const groupedData = getGroupedData({
     allTx: plotTx,
@@ -37,36 +38,44 @@ const TrendPlot = ({
     minTime: minTime,
     maxTime: maxTime,
     txType: txType,
-    metaCategory: metaCategory
+    metaCategory: metaCategory,
   });
   return (
-    <Plot
-      layout={plotLayout}
-      data={plotData}
-      useResizeHandler={true}
-      style={{ width: "100%", height: "100%" }}
-      onClick={(e) => {
-        const data = e.points[0].data;
-        if (data._isAvg) {
-          return;
-        }
-        let filters = {
-          date: dateFormatInv({ d: e.points[0].x, timeFrame: timeFrame }),
-        };
-        if (data._cat !== "_all") {
-          filters[groupOn] = data._cat;
-        }
-        setTableFilters(filters);
-      }}
-    />
+    <>
+      <IncludeAvgCheckbox includeAverages={includeAverages} setIncludeAverages={setIncludeAverages} />
+      <Plot
+        layout={plotLayout}
+        data={plotData}
+        useResizeHandler={true}
+        style={{ width: "100%", height: "100%" }}
+        onClick={(e) => {
+          const data = e.points[0].data;
+          if (data._isAvg) {
+            return;
+          }
+          let filters = {
+            date: dateFormatInv({ d: e.points[0].x, timeFrame: timeFrame }),
+          };
+          if (data._cat !== "_all") {
+            filters[groupOn] = data._cat;
+          }
+          setTableFilters(filters);
+        }}
+      />
+    </>
   );
 };
 
-const getPlotLayout = ({ timeFrame, minTime, maxTime, txType, 
-  metaCategory }) => {
+const getPlotLayout = ({
+  timeFrame,
+  minTime,
+  maxTime,
+  txType,
+  metaCategory,
+}) => {
   const title = `${timeFrame === "month" ? "Month" : "Year"}ly Trends - ${
     txType === "expense" ? "Expenses" : "Income"
-  }${metaCategory === '_all' ? '' : ' - ' + metaCategory}`;
+  }${metaCategory === "_all" ? "" : " - " + metaCategory}`;
   const subTitle = `${dateFormat({
     d: minTime,
     timeFrame: timeFrame,
@@ -122,12 +131,13 @@ const getPlotData = ({
     };
     plotData.push(newData);
     if (includeAverages) {
-      const avgY = totalY / newData.y.length
+      const avgY = totalY / newData.y.length;
       const avgData = {
         ...newData,
         ...{
           _cat: newData._cat + "_avg",
           _isAvg: true,
+          line: {dash: 'dash'},
           showlegend: false,
           text: `Avg. ${catName}<br>${currencyFormat(avgY)}`,
           y: newData.y.map((y) => avgY),
@@ -142,6 +152,19 @@ const getPlotData = ({
   });
   plotData = addColors(plotData);
   return plotData;
+};
+
+const IncludeAvgCheckbox = ({ includeAverages, setIncludeAverages }) => {
+  return (
+    <div style={{ margin: "5pt 10pt" }}>
+      {`Include Avg. `}
+      <input
+        type="checkbox"
+        checked={includeAverages}
+        onChange={(e) => setIncludeAverages(e.target.checked)}
+      />
+    </div>
+  );
 };
 
 export default TrendPlot;

@@ -30,7 +30,6 @@ const Home = ({ history }) => {
     timeFrame: "month",
     minTime: undefined,
     maxTime: undefined,
-    includeAverages: true,
   });
   const [tableFilters, setTableFilters] = useState({});
   const [waitForLoad, setWaitForLoad] = useState(loadingData);

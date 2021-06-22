@@ -105,24 +105,6 @@ const Selections = ({
       </div>
     );
   });
-  if (selectionValues.plotType === "trend") {
-    content.push(
-      <div style={{ margin: "5pt 10pt" }}>
-        {`Include Avg. `}
-        <input
-          type="checkbox"
-          checked={selectionValues.includeAverages}
-          onChange={(e) =>
-            changeSelectionValue({
-              key: "includeAverages",
-              val: e.target.checked,
-              setValueFunc: setSelectionValues,
-            })
-          }
-        />
-      </div>
-    );
-  }
   content.push(<hr />);
   return <>{content}</>;
 };
