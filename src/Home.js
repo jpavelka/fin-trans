@@ -137,6 +137,7 @@ const Home = ({ history }) => {
         setSelectionValues={setSelectionValues}
         allMetaCats={allMetaCats}
         allTimes={allTimes}
+        metaCategories={settings.metaCategories[selectionValues.metaCatVersion]}
       />
       {waitForLoad ? (
         <h3 style={{ textAlign: "center" }}>Waiting for data to load...</h3>

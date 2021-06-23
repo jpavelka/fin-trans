@@ -1,90 +1,25 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import Select from "react-select";
 import { AuthContext } from "../auth/Auth";
+import CategoryModal from "./CategoryModal";
+import { getDropdownArgs, sanitize } from "./utils";
 
 const Selections = ({
   selectionValues,
   setSelectionValues,
   allMetaCats,
   allTimes,
+  metaCategories,
 }) => {
   const { settings } = useContext(AuthContext);
+  const [showCategoryModal, setShowCategoryModal] = useState(true);
   allMetaCats = [{ value: "_all", label: "All" }].concat(allMetaCats);
-  const dropdownArgs = [
-    [
-      {
-        label: "Category Grouping",
-        options: Object.keys(settings.metaCategories).filter(
-          (mc) => mc !== "_default"
-        ),
-        selectionKey: "metaCatVersion",
-      },
-      {
-        label: "Category Changes",
-        options: Object.keys(settings.categoryChanges).filter(
-          (mc) => mc !== "_default"
-        ),
-        selectionKey: "categoryChangeVersion",
-      },
-    ],
-    [
-      {
-        label: "Transaction Type",
-        options: [{ value: "expense", label: "Expense" }],
-        selectionKey: "txType",
-      },
-      {
-        label: "Plot Type",
-        options: [
-          { value: "trend", label: "Trend" },
-          { value: "singlePeriod", label: "Single Period" },
-        ],
-        selectionKey: "plotType",
-      },
-      {
-        label: "Meta Category",
-        options: allMetaCats,
-        selectionKey: "metaCategory",
-      },
-    ],
-    [
-      {
-        label: "Time Frame",
-        options: [
-          { value: "month", label: "Month" },
-          { value: "year", label: "Year" },
-        ],
-        selectionKey: "timeFrame",
-      },
-    ],
-  ];
-  const lastInd = dropdownArgs.length - 1;
-  if (selectionValues.plotType === "trend") {
-    dropdownArgs[lastInd] = dropdownArgs[lastInd].concat([
-      {
-        label: `Start ${
-          selectionValues.timeFrame === "month" ? "Month" : "Year"
-        }`,
-        options: allTimes,
-        selectionKey: "minTime",
-      },
-      {
-        label: `End ${
-          selectionValues.timeFrame === "month" ? "Month" : "Year"
-        }`,
-        options: allTimes,
-        selectionKey: "maxTime",
-      },
-    ]);
-  } else {
-    dropdownArgs[lastInd] = dropdownArgs[lastInd].concat([
-      {
-        label: selectionValues.timeFrame === "month" ? "Month" : "Year",
-        options: allTimes,
-        selectionKey: "maxTime",
-      },
-    ]);
-  }
+  const dropdownArgs = getDropdownArgs({
+    settings: settings,
+    allMetaCats: allMetaCats,
+    selectionValues: selectionValues,
+    allTimes: allTimes,
+  });
   const content = dropdownArgs.map((selGroup) => {
     const selGroupContent = selGroup.map((sel) => {
       return (
@@ -105,6 +40,18 @@ const Selections = ({
       </div>
     );
   });
+  content.push(
+    <div>
+      <CategoryModal
+        show={showCategoryModal}
+        setShow={setShowCategoryModal}
+        selectionValues={selectionValues}
+        setSelectionValues={setSelectionValues}
+        metaCategories={metaCategories}
+      />
+      <button onClick={() => setShowCategoryModal(true)}>Categories</button>
+    </div>
+  );
   content.push(<hr />);
   return <>{content}</>;
 };
@@ -116,9 +63,6 @@ const DropdownFromList = ({
   selectionValues,
   setSelectionValues,
 }) => {
-  const sanitize = (s) => {
-    return s.replace("-", "").replace("/", "");
-  };
   options = options
     .map((opt) => {
       return typeof opt === "string" ? (opt = { value: opt, label: opt }) : opt;
