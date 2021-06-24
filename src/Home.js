@@ -167,6 +167,7 @@ const Home = ({ history }) => {
               />
             </Accordion.Collapse>
           </Accordion>
+          <hr/>
           <Accordion defaultActiveKey="0">
             <Accordion.Toggle eventKey="0">Toggle Table</Accordion.Toggle>
             <Accordion.Collapse eventKey="0">

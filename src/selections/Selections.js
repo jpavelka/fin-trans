@@ -13,7 +13,7 @@ const Selections = ({
   metaCategories,
   allTags,
 }) => {
-  const { settings } = useContext(AuthContext);
+  const { settings, minLoadMonth, setMinLoadMonth } = useContext(AuthContext);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   allMetaCats = [{ value: "_all", label: "All" }].concat(allMetaCats);
@@ -30,6 +30,8 @@ const Selections = ({
           key={sel.selectionKey}
           selectionValues={selectionValues}
           setSelectionValues={setSelectionValues}
+          minLoadMonth={minLoadMonth}
+          setMinLoadMonth={setMinLoadMonth}
           {...sel}
         />
       );
@@ -75,6 +77,8 @@ const DropdownFromList = ({
   selectionKey,
   selectionValues,
   setSelectionValues,
+  minLoadMonth,
+  setMinLoadMonth,
 }) => {
   options = options
     .map((opt) => {
@@ -91,11 +95,63 @@ const DropdownFromList = ({
     (opt) => opt.originalValue === selectionValues[selectionKey]
   );
   const onChange = (e) => {
+    const value = e.originalValue
     changeSelectionValue({
       key: selectionKey,
-      val: e.originalValue,
+      val: value,
       setValueFunc: setSelectionValues,
     });
+    if (selectionKey === 'timeFrame'){
+      if (selectionValues.plotType === 'trend'){
+        if (value === 'year'){
+          const newMinTime = selectionValues.minTime.slice(0, 4)
+          changeSelectionValue({
+            key: 'minTime',
+            val: newMinTime,
+            setValueFunc: setSelectionValues
+          })
+          changeSelectionValue({
+            key: 'maxTime',
+            val: selectionValues.maxTime.slice(0, 4),
+            setValueFunc: setSelectionValues
+          })
+          if (newMinTime + '-01' < minLoadMonth){
+            setMinLoadMonth(newMinTime + '-01')
+          }
+        }
+        else {
+
+          changeSelectionValue({
+            key: 'minTime',
+            val: selectionValues.minTime + '-01',
+            setValueFunc: setSelectionValues
+          })
+          changeSelectionValue({
+            key: 'maxTime',
+            val: selectionValues.maxTime + '-12',
+            setValueFunc: setSelectionValues
+          })
+        }
+      } else {
+        if (value === 'year'){
+          const newTime = selectionValues.maxTime.slice(0, 4)
+          changeSelectionValue({
+            key: 'maxTime',
+            val: newTime,
+            setValueFunc: setSelectionValues
+          })
+          if (newTime + '-01' < minLoadMonth){
+            setMinLoadMonth(newTime + '-01')
+          }
+        } else {
+          changeSelectionValue({
+            key: 'maxTime',
+            val: selectionValues.maxTime + '-01',
+            setValueFunc: setSelectionValues
+          })
+        }
+      }
+    }
   };
   return (
     <div style={{ width: "100pt", marginLeft: "10pt" }}>
