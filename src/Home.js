@@ -25,6 +25,8 @@ const Home = ({ history }) => {
     txType: "expense",
     inactiveCategories: [],
     inactiveMetaCategories: [],
+    requiredTags: [],
+    forbiddenTags: [],
     plotType: "trend",
     metaCategory: "_all",
     timeFrame: "month",
@@ -90,13 +92,24 @@ const Home = ({ history }) => {
   ) {
     return <div>Loading...</div>;
   }
+  let allTags = []
+  for (const tx of allTx){
+    allTags = allTags.concat(tx.tags || [])
+  }
+  allTags = sortedUniqueArray({array: allTags})
   allTx = allTx.filter((tx) => {
     return (
       tx[selectionValues.timeFrame] >= selectionValues.minTime &&
       tx[selectionValues.timeFrame] <= selectionValues.maxTime &&
       tx.type === selectionValues.txType &&
       !selectionValues.inactiveCategories.includes(tx.category) &&
-      !selectionValues.inactiveMetaCategories.includes(tx.metaCategory)
+      !selectionValues.inactiveMetaCategories.includes(tx.metaCategory) &&
+      ((tx.tags || []).map(tag => {
+        return selectionValues.requiredTags.includes(tag) ? 1 : 0
+      }).reduce((a, b) => a + b, 0) === selectionValues.requiredTags.length) &&
+      (tx.tags || []).map(tag => {
+        return selectionValues.forbiddenTags.includes(tag) ? 1 : 0
+      }).reduce((a, b) => a + b, 0) === 0
     );
   });
   allTx = allTx.filter((tx) => {
@@ -138,6 +151,7 @@ const Home = ({ history }) => {
         allMetaCats={allMetaCats}
         allTimes={allTimes}
         metaCategories={settings.metaCategories[selectionValues.metaCatVersion]}
+        allTags={allTags}
       />
       {waitForLoad ? (
         <h3 style={{ textAlign: "center" }}>Waiting for data to load...</h3>

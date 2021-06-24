@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import Select from "react-select";
 import { AuthContext } from "../auth/Auth";
 import CategoryModal from "./CategoryModal";
+import TagModal from "./TagModal";
 import { getDropdownArgs, sanitize } from "./utils";
 
 const Selections = ({
@@ -10,9 +11,11 @@ const Selections = ({
   allMetaCats,
   allTimes,
   metaCategories,
+  allTags,
 }) => {
   const { settings } = useContext(AuthContext);
-  const [showCategoryModal, setShowCategoryModal] = useState(true);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showTagModal, setShowTagModal] = useState(false);
   allMetaCats = [{ value: "_all", label: "All" }].concat(allMetaCats);
   const dropdownArgs = getDropdownArgs({
     settings: settings,
@@ -41,7 +44,11 @@ const Selections = ({
     );
   });
   content.push(
-    <div>
+    <div style={{margin: '10pt'}}>
+      <button onClick={() => setShowCategoryModal(true)} style={{marginRight: '5pt'}}>
+        Category Detail
+      </button>
+      <button onClick={() => setShowTagModal(true)}>Tag Detail</button>
       <CategoryModal
         show={showCategoryModal}
         setShow={setShowCategoryModal}
@@ -49,7 +56,13 @@ const Selections = ({
         setSelectionValues={setSelectionValues}
         metaCategories={metaCategories}
       />
-      <button onClick={() => setShowCategoryModal(true)}>Categories</button>
+      <TagModal
+        show={showTagModal}
+        setShow={setShowTagModal}
+        selectionValues={selectionValues}
+        setSelectionValues={setSelectionValues}
+        allTags={allTags}
+      />
     </div>
   );
   content.push(<hr />);
