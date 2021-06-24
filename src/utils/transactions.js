@@ -19,6 +19,9 @@ const transformTransactions = ({
     tx.metaCategory = metaCatInverse[tx.category] || "Misc";
     tx.type = tx.amount < 0 ? "expense" : "income";
     tx.tags = tx.tags || [];
+    if (typeof tx.tags === 'string'){
+      tx.tags = tx.tags.split(',')
+    }
     tx.tags = tx.tags.filter((t) => t.trim() !== "");
     tx.month = dayjs(tx.date).format("YYYY-MM");
     tx.year = dayjs(tx.date).format("YYYY");
