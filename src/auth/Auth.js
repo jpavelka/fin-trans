@@ -76,13 +76,22 @@ export const AuthProvider = ({ children }) => {
                 newAllListenMonths[newAllListenMonths.length - 1]
               )
               .onSnapshot((query) => {
-                setLoadingData(true);                
+                setLoadingData(true);
                 let newData = {};
                 for (let doc of query.docs) {
                   const m = doc.id;
-                  const data = doc.data() || {};                  
-                  newData[m] = data.transactions || [];
-                }                
+                  const data = doc.data() || {};
+                  let transactions = data.transactions || [];
+                  for (let tx of transactions) {
+                    if (
+                      Object.keys(tx).includes("comment") &&
+                      !Object.keys(tx).includes("comments")
+                    ) {
+                      tx.comments = tx.comment;
+                    }
+                  }
+                  newData[m] = transactions;
+                }
                 setTxData((d) => {
                   return { ...d, ...newData };
                 });
