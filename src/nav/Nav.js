@@ -4,16 +4,16 @@ import { Link } from "react-router-dom";
 const NavMenu = () => {
   return (
     <Navbar bg="dark" variant="dark" expand="lg">
-      <Navbar.Brand as={Link} to="/">
+      <Navbar.Brand as={Link} to="/fin-trans">
         Transactions
       </Navbar.Brand>
       <Navbar.Toggle aria-controls="basic-navbar-nav" />
       <Navbar.Collapse id="basic-navbar-nav">
         <Nav className="mr-auto">
-          <Nav.Link as={Link} to="/upload">
+          <Nav.Link as={Link} to="/fin-trans/upload">
             Upload
           </Nav.Link>
-          <Nav.Link as={Link} to="/edit">
+          <Nav.Link as={Link} to="/fin-trans/edit">
             Edit
           </Nav.Link>
         </Nav>

@@ -5,7 +5,7 @@ import { AuthContext } from "./Auth";
 const Login = ({ history }) => {
   const { currentUser } = useContext(AuthContext);
   if (!!currentUser) {
-    history.push("/");
+    history.push("/fin-trans");
   }
   const auth = firebase.auth();
   const googleProvider = new firebase.auth.GoogleAuthProvider();
@@ -13,7 +13,7 @@ const Login = ({ history }) => {
     auth
       .signInWithPopup(googleProvider)
       .then((res) => {
-        history.push("/");
+        history.push("/fin-trans");
       })
       .catch((error) => {
         console.log(error.message);
