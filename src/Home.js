@@ -83,7 +83,7 @@ const Home = ({ history }) => {
     );
   }
   if (!!!currentUser) {
-    history.push("/login");
+    history.push("/fin-trans/login");
   }
   if (
     !!!settings ||
@@ -140,7 +140,7 @@ const Home = ({ history }) => {
         onClick={() => {
           signOutFunc();
           setCurrentUser();
-          history.push("/login");
+          history.push("/fin-trans/login");
         }}
       >
         Sign Out

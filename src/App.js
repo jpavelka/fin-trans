@@ -13,10 +13,10 @@ const App = () => {
         <NavMenu />
         <Switch>
           <div style={{ margin: "5pt" }}>
-            <Route exact path="/" component={Home} />
-            <Route exact path="/login" component={Login} />
-            <Route exact path="/upload" component={LoadData} />
-            <Route exact path="/edit" component={EditTransactions} />
+            <Route exact path="/fin-trans" component={Home} />
+            <Route exact path="/fin-trans/login" component={Login} />
+            <Route exact path="/fin-trans/upload" component={LoadData} />
+            <Route exact path="/fin-trans/edit" component={EditTransactions} />
           </div>
         </Switch>
       </Router>
