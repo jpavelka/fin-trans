@@ -32,6 +32,7 @@ const Home = ({ history }) => {
     timeFrame: "month",
     minTime: undefined,
     maxTime: undefined,
+    amortize: false,
   });
   const [tableFilters, setTableFilters] = useState({});
   const [waitForLoad, setWaitForLoad] = useState(loadingData);
@@ -92,11 +93,11 @@ const Home = ({ history }) => {
   ) {
     return <div>Loading...</div>;
   }
-  let allTags = []
-  for (const tx of allTx){
-    allTags = allTags.concat(tx.tags || [])
+  let allTags = [];
+  for (const tx of allTx) {
+    allTags = allTags.concat(tx.tags || []);
   }
-  allTags = sortedUniqueArray({array: allTags})
+  allTags = sortedUniqueArray({ array: allTags });
   allTx = allTx.filter((tx) => {
     return (
       tx[selectionValues.timeFrame] >= selectionValues.minTime &&
@@ -104,22 +105,25 @@ const Home = ({ history }) => {
       tx.type === selectionValues.txType &&
       !selectionValues.inactiveCategories.includes(tx.category) &&
       !selectionValues.inactiveMetaCategories.includes(tx.metaCategory) &&
-      ((tx.tags || []).map(tag => {
-        return selectionValues.requiredTags.includes(tag) ? 1 : 0
-      }).reduce((a, b) => a + b, 0) === selectionValues.requiredTags.length) &&
-      (tx.tags || []).map(tag => {
-        return selectionValues.forbiddenTags.includes(tag) ? 1 : 0
-      }).reduce((a, b) => a + b, 0) === 0
+      (tx.tags || [])
+        .map((tag) => {
+          return selectionValues.requiredTags.includes(tag) ? 1 : 0;
+        })
+        .reduce((a, b) => a + b, 0) === selectionValues.requiredTags.length &&
+      (tx.tags || [])
+        .map((tag) => {
+          return selectionValues.forbiddenTags.includes(tag) ? 1 : 0;
+        })
+        .reduce((a, b) => a + b, 0) === 0 &&
+      (selectionValues.amortize ? !tx.skipIfAmortize : !tx.skipIfNoAmortize)
     );
   });
   allTx = allTx.filter((tx) => {
-    return selectionValues.plotType === 'trend' ? (
-      tx[selectionValues.timeFrame] >= selectionValues.minTime &&
-      tx[selectionValues.timeFrame] <= selectionValues.maxTime
-    ) : (
-      tx[selectionValues.timeFrame] === selectionValues.maxTime
-    )
-  })
+    return selectionValues.plotType === "trend"
+      ? tx[selectionValues.timeFrame] >= selectionValues.minTime &&
+          tx[selectionValues.timeFrame] <= selectionValues.maxTime
+      : tx[selectionValues.timeFrame] === selectionValues.maxTime;
+  });
   const allMetaCats = sortedUniqueArray({
     array: allTx.map((tx) => tx.metaCategory),
   });
@@ -167,7 +171,7 @@ const Home = ({ history }) => {
               />
             </Accordion.Collapse>
           </Accordion>
-          <hr/>
+          <hr />
           <Accordion defaultActiveKey="0">
             <Accordion.Toggle eventKey="0">Toggle Table</Accordion.Toggle>
             <Accordion.Collapse eventKey="0">

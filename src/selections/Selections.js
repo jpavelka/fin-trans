@@ -46,8 +46,11 @@ const Selections = ({
     );
   });
   content.push(
-    <div style={{margin: '10pt'}}>
-      <button onClick={() => setShowCategoryModal(true)} style={{marginRight: '5pt'}}>
+    <div style={{ margin: "10pt" }}>
+      <button
+        onClick={() => setShowCategoryModal(true)}
+        style={{ marginRight: "5pt" }}
+      >
         Category Detail
       </button>
       <button onClick={() => setShowTagModal(true)}>Tag Detail</button>
@@ -66,6 +69,23 @@ const Selections = ({
         allTags={allTags}
       />
     </div>
+  );
+  content.push(
+    <>
+      <input
+        type="checkbox"
+        id={"selectAmortizeCheckbox"}
+        defaultChecked={selectionValues.amortize}
+        onChange={() => {
+          changeSelectionValue({
+            key: "amortize",
+            val: !selectionValues.amortize,
+            setValueFunc: setSelectionValues,
+          });
+        }}
+      />
+      <label for={"selectAmortizeCheckbox"}>&nbsp;&nbsp;Use Amortization</label>
+    </>
   );
   content.push(<hr />);
   return <>{content}</>;
@@ -95,60 +115,58 @@ const DropdownFromList = ({
     (opt) => opt.originalValue === selectionValues[selectionKey]
   );
   const onChange = (e) => {
-    const value = e.originalValue
+    const value = e.originalValue;
     changeSelectionValue({
       key: selectionKey,
       val: value,
       setValueFunc: setSelectionValues,
     });
-    if (selectionKey === 'timeFrame'){
-      if (selectionValues.plotType === 'trend'){
-        if (value === 'year'){
-          const newMinTime = selectionValues.minTime.slice(0, 4)
+    if (selectionKey === "timeFrame") {
+      if (selectionValues.plotType === "trend") {
+        if (value === "year") {
+          const newMinTime = selectionValues.minTime.slice(0, 4);
           changeSelectionValue({
-            key: 'minTime',
+            key: "minTime",
             val: newMinTime,
-            setValueFunc: setSelectionValues
-          })
+            setValueFunc: setSelectionValues,
+          });
           changeSelectionValue({
-            key: 'maxTime',
+            key: "maxTime",
             val: selectionValues.maxTime.slice(0, 4),
-            setValueFunc: setSelectionValues
-          })
-          if (newMinTime + '-01' < minLoadMonth){
-            setMinLoadMonth(newMinTime + '-01')
-          }
-        }
-        else {
-
-          changeSelectionValue({
-            key: 'minTime',
-            val: selectionValues.minTime + '-01',
-            setValueFunc: setSelectionValues
-          })
-          changeSelectionValue({
-            key: 'maxTime',
-            val: selectionValues.maxTime + '-12',
-            setValueFunc: setSelectionValues
-          })
-        }
-      } else {
-        if (value === 'year'){
-          const newTime = selectionValues.maxTime.slice(0, 4)
-          changeSelectionValue({
-            key: 'maxTime',
-            val: newTime,
-            setValueFunc: setSelectionValues
-          })
-          if (newTime + '-01' < minLoadMonth){
-            setMinLoadMonth(newTime + '-01')
+            setValueFunc: setSelectionValues,
+          });
+          if (newMinTime + "-01" < minLoadMonth) {
+            setMinLoadMonth(newMinTime + "-01");
           }
         } else {
           changeSelectionValue({
-            key: 'maxTime',
-            val: selectionValues.maxTime + '-01',
-            setValueFunc: setSelectionValues
-          })
+            key: "minTime",
+            val: selectionValues.minTime + "-01",
+            setValueFunc: setSelectionValues,
+          });
+          changeSelectionValue({
+            key: "maxTime",
+            val: selectionValues.maxTime + "-12",
+            setValueFunc: setSelectionValues,
+          });
+        }
+      } else {
+        if (value === "year") {
+          const newTime = selectionValues.maxTime.slice(0, 4);
+          changeSelectionValue({
+            key: "maxTime",
+            val: newTime,
+            setValueFunc: setSelectionValues,
+          });
+          if (newTime + "-01" < minLoadMonth) {
+            setMinLoadMonth(newTime + "-01");
+          }
+        } else {
+          changeSelectionValue({
+            key: "maxTime",
+            val: selectionValues.maxTime + "-01",
+            setValueFunc: setSelectionValues,
+          });
         }
       }
     }

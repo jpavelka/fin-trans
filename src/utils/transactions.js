@@ -12,6 +12,7 @@ const transformTransactions = ({
       metaCatInverse[c] = mc;
     }
   }
+  let amortizeTx = [];
   for (let tx of transactions) {
     if (categoriesToChange.includes(tx.category)) {
       tx.category = categoryChanges[tx.category];
@@ -25,8 +26,23 @@ const transformTransactions = ({
     tx.tags = tx.tags.filter((t) => t.trim() !== "");
     tx.month = dayjs(tx.date).format("YYYY-MM");
     tx.year = dayjs(tx.date).format("YYYY");
+    if (!!tx.amortize) {
+      tx.amortize = parseInt(tx.amortize);
+      tx.skipIfAmortize = true
+      for (let i=0; i<tx.amortize; i++){
+        const newVals = {
+          date: dayjs(tx.date).add(i, 'month').format("YYYY-MM-DD"),
+          amount: tx.amount / tx.amortize,
+          skipIfAmortize: false,
+          skipIfNoAmortize: true
+        }
+        newVals.month = dayjs(newVals.date).format("YYYY-MM");
+        newVals.year = dayjs(newVals.date).format("YYYY");
+        amortizeTx.push({...tx, ...newVals})
+      }
+    }
   }
-  return transactions
+  return transactions.concat(amortizeTx)
     .filter((tx) => tx.metaCategory !== "Ignore")
     .map((tx) => {
       return { ...tx, ...{ amount: Math.abs(tx.amount) } };
