@@ -21,7 +21,7 @@ const transformTransactions = ({
     tx.type = tx.amount < 0 ? "expense" : "income";
     tx.tags = tx.tags || [];
     if (typeof tx.tags === "string") {
-      tx.tags = tx.tags.split(",");
+      tx.tags = tx.tags.split(",").map(x => x.toLowerCase().trim());
     }
     tx.tags = tx.tags.filter((t) => t.trim() !== "");
     tx.month = dayjs(tx.date).format("YYYY-MM");
