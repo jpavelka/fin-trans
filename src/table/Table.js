@@ -4,7 +4,7 @@ import tableIcons from "./tableIcons";
 
 const Table = ({ transactions, filterValues = {} }) => {
   const columns = [
-    { title: "Date", field: "date" },
+    { title: "Date", field: "date", defaultSort: "desc" },
     { title: "Amount", field: "amount", type: "currency" },
     { title: "Category", field: "category" },
     { title: "Meta Category", field: "metaCategory" },
