@@ -23,6 +23,9 @@ const LoadData = () => {
 };
 
 const uploadData = async (data) => {
+  for (let d of data) {
+    d.date = new Date(Date.parse(d.date)).toISOString().substring(0, 10);
+  }
   const allMonths = sortedUniqueArray({
     array: data.map((d) => d.date.slice(0, 7)),
   });
