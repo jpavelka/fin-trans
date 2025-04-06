@@ -1,4 +1,5 @@
-import MaterialTable from "material-table";
+import MaterialTable, { MTableBody } from "material-table";
+import { TableCell, TableFooter, TableRow } from "@material-ui/core";
 import React from "react";
 import tableIcons from "./tableIcons";
 
@@ -25,7 +26,24 @@ const Table = ({ transactions, filterValues = {} }) => {
         data={transactions}
         columns={columns}
         icons={tableIcons}
-        options={{ filtering: true }}
+        options={{ filtering: true, pageSize: transactions.length }}
+        components={{
+          Body: (props) => {
+            let amtSum = 0;
+            props.renderData.forEach((rowData) => {
+              amtSum += rowData.amount;
+            });
+            return (
+              <>
+                  <TableRow>
+                    <TableCell colSpan={1}/>
+                    <TableCell colSpan={1}>Total: ${(Math.round(100 * amtSum, 2) / 100).toLocaleString()}</TableCell>
+                  </TableRow>                
+                <MTableBody {...props}/>
+              </>
+            )
+          }
+        }}
       />
     </div>
   );

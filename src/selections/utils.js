@@ -23,34 +23,16 @@ export const getDropdownArgs = ({
     ],
     [
       {
-        label: "Transaction Type",
-        options: [{ value: "expense", label: "Expense" }],
-        selectionKey: "txType",
-      },
-      {
         label: "Plot Type",
         options: [
-          { value: "trend", label: "Trend" },
-          { value: "singlePeriod", label: "Single Period" },
+          { value: "monthTrend", label: "Month Trend" },
+          { value: "singleMonth", label: "Single Month" },
+          { value: "yearTrend", label: "Year Trend" },
+          { value: "singleYear", label: "Month Year" },
         ],
-        selectionKey: "plotType",
-      },
-      {
-        label: "Meta Category",
-        options: allMetaCats,
-        selectionKey: "metaCategory",
-      },
-    ],
-    [
-      {
-        label: "Time Frame",
-        options: [
-          { value: "month", label: "Month" },
-          { value: "year", label: "Year" },
-        ],
-        selectionKey: "timeFrame",
-      },
-    ],
+        selectionKey: "plotTypeFull",
+      }
+    ]
   ];
   const lastInd = dropdownArgs.length - 1;
   if (selectionValues.plotType === "trend") {
@@ -79,6 +61,13 @@ export const getDropdownArgs = ({
       },
     ]);
   }
+  dropdownArgs.push(
+    [{
+      label: "Meta Category",
+      options: allMetaCats,
+      selectionKey: "metaCategory"
+    }]
+  )
   return dropdownArgs;
 };
 

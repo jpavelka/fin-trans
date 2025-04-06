@@ -23,7 +23,47 @@ const Selections = ({
     selectionValues: selectionValues,
     allTimes: allTimes,
   });
-  const content = dropdownArgs.map((selGroup) => {
+  const content = [
+    <div style={{ margin: "10pt" }}>
+      <button
+        onClick={() => setShowCategoryModal(true)}
+        style={{ marginRight: "5pt" }}
+      >
+        Category Detail
+      </button>
+      <button onClick={() => setShowTagModal(true)}>Tag Detail</button>
+      <span style={{marginLeft: '0.5rem'}}>
+        <input
+          type="checkbox"
+          id={"selectAmortizeCheckbox"}
+          defaultChecked={selectionValues.amortize}
+          onChange={() => {
+            changeSelectionValue({
+              key: "amortize",
+              val: !selectionValues.amortize,
+              setValueFunc: setSelectionValues,
+            });
+          }}
+        />
+        <label for={"selectAmortizeCheckbox"}>&nbsp;&nbsp;Use Amortization</label>
+      </span>
+      <CategoryModal
+        show={showCategoryModal}
+        setShow={setShowCategoryModal}
+        selectionValues={selectionValues}
+        setSelectionValues={setSelectionValues}
+        metaCategories={metaCategories}
+      />
+      <TagModal
+        show={showTagModal}
+        setShow={setShowTagModal}
+        selectionValues={selectionValues}
+        setSelectionValues={setSelectionValues}
+        allTags={allTags}
+      />
+    </div>
+  ]
+  content.push(dropdownArgs.map((selGroup) => {
     const selGroupContent = selGroup.map((sel) => {
       return (
         <DropdownFromList
@@ -44,49 +84,7 @@ const Selections = ({
         {selGroupContent}
       </div>
     );
-  });
-  content.push(
-    <div style={{ margin: "10pt" }}>
-      <button
-        onClick={() => setShowCategoryModal(true)}
-        style={{ marginRight: "5pt" }}
-      >
-        Category Detail
-      </button>
-      <button onClick={() => setShowTagModal(true)}>Tag Detail</button>
-      <CategoryModal
-        show={showCategoryModal}
-        setShow={setShowCategoryModal}
-        selectionValues={selectionValues}
-        setSelectionValues={setSelectionValues}
-        metaCategories={metaCategories}
-      />
-      <TagModal
-        show={showTagModal}
-        setShow={setShowTagModal}
-        selectionValues={selectionValues}
-        setSelectionValues={setSelectionValues}
-        allTags={allTags}
-      />
-    </div>
-  );
-  content.push(
-    <>
-      <input
-        type="checkbox"
-        id={"selectAmortizeCheckbox"}
-        defaultChecked={selectionValues.amortize}
-        onChange={() => {
-          changeSelectionValue({
-            key: "amortize",
-            val: !selectionValues.amortize,
-            setValueFunc: setSelectionValues,
-          });
-        }}
-      />
-      <label for={"selectAmortizeCheckbox"}>&nbsp;&nbsp;Use Amortization</label>
-    </>
-  );
+  }));
   content.push(<hr />);
   return <>{content}</>;
 };
@@ -121,6 +119,21 @@ const DropdownFromList = ({
       val: value,
       setValueFunc: setSelectionValues,
     });
+    if (selectionKey === "plotTypeFull") {
+      if (value === "monthTrend") {
+        changeSelectionValue({key: "plotType", val: "trend", setValueFunc: setSelectionValues});
+        changeSelectionValue({key: "timeFrame", val: "month", setValueFunc: setSelectionValues});
+      } else if (value === "singleMonth") {
+        changeSelectionValue({key: "plotType", val: "singlePeriod", setValueFunc: setSelectionValues});
+        changeSelectionValue({key: "timeFrame", val: "month", setValueFunc: setSelectionValues});
+      } else if (value === "yearTrend") {
+        changeSelectionValue({key: "plotType", val: "trend", setValueFunc: setSelectionValues});
+        changeSelectionValue({key: "timeFrame", val: "year", setValueFunc: setSelectionValues});
+      } else if (value === "singleYear") {
+        changeSelectionValue({key: "plotType", val: "singlePeriod", setValueFunc: setSelectionValues});
+        changeSelectionValue({key: "timeFrame", val: "year", setValueFunc: setSelectionValues});
+      }
+    }
     if (selectionKey === "timeFrame") {
       if (selectionValues.plotType === "trend") {
         if (value === "year") {
