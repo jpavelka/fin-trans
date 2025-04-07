@@ -28,7 +28,7 @@ export const getDropdownArgs = ({
           { value: "monthTrend", label: "Month Trend" },
           { value: "singleMonth", label: "Single Month" },
           { value: "yearTrend", label: "Year Trend" },
-          { value: "singleYear", label: "Month Year" },
+          { value: "singleYear", label: "Single Year" },
         ],
         selectionKey: "plotTypeFull",
       }
