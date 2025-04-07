@@ -4,7 +4,6 @@ import { AuthContext } from "../auth/Auth";
 import CategoryModal from "./CategoryModal";
 import TagModal from "./TagModal";
 import { getDropdownArgs, sanitize } from "./utils";
-import { Accordion } from "react-bootstrap";
 
 const Selections = ({
   selectionValues,
