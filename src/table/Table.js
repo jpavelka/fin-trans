@@ -1,9 +1,9 @@
-import MaterialTable, { MTableBody } from "material-table";
-import { TableCell, TableFooter, TableRow } from "@material-ui/core";
-import React from "react";
+import MaterialTable from "material-table";
+import React, { useRef, useState } from "react";
 import tableIcons from "./tableIcons";
 
 const Table = ({ transactions, filterValues = {} }) => {
+  const tableRef = useRef(null);
   const columns = [
     { title: "Date", field: "date", defaultSort: "desc" },
     { title: "Amount", field: "amount", type: "currency" },
@@ -19,31 +19,29 @@ const Table = ({ transactions, filterValues = {} }) => {
       col.defaultFilter = filterValues[col.field];
     }
   }
+  const [amtSum, setAmtSum] = useState(transactions.map(t => t.amount).reduce((a,b) => a + b));
+  const [numTrx, setNumTrx] = useState(transactions.length);
+  const filterChange = () => {
+    let filterAmtSum = 0;
+    let filterNumTrx = 0;
+    for (const d of tableRef.current.state.data) {
+      filterAmtSum += d.amount;
+    }
+    filterNumTrx = tableRef.current.state.data.length;
+    setAmtSum(filterAmtSum);
+    setNumTrx(filterNumTrx);
+  }
   return (
     <div>
       <MaterialTable
-        title={"Transactions"}
+        title={`$${(Math.round(100 * amtSum, 2) / 100).toLocaleString()} (${numTrx} transactions)`}
+        tableRef={tableRef}
         data={transactions}
         columns={columns}
         icons={tableIcons}
-        options={{ filtering: true, pageSize: transactions.length }}
-        components={{
-          Body: (props) => {
-            let amtSum = 0;
-            props.renderData.forEach((rowData) => {
-              amtSum += rowData.amount;
-            });
-            return (
-              <>
-                  <TableRow>
-                    <TableCell colSpan={1}/>
-                    <TableCell colSpan={1}>Total: ${(Math.round(100 * amtSum, 2) / 100).toLocaleString()}</TableCell>
-                  </TableRow>                
-                <MTableBody {...props}/>
-              </>
-            )
-          }
-        }}
+        options={{ filtering: true }}
+        onFilterChange={filterChange}
+        onSearchChange={filterChange}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { AuthContext } from "../auth/Auth";
 import CategoryModal from "./CategoryModal";
 import TagModal from "./TagModal";
 import { getDropdownArgs, sanitize } from "./utils";
+import { Accordion } from "react-bootstrap";
 
 const Selections = ({
   selectionValues,
@@ -23,7 +24,29 @@ const Selections = ({
     selectionValues: selectionValues,
     allTimes: allTimes,
   });
-  const content = [
+  const content = dropdownArgs.map((selGroup) => {
+    const selGroupContent = selGroup.map((sel) => {
+      return (
+        <DropdownFromList
+          key={sel.selectionKey}
+          selectionValues={selectionValues}
+          setSelectionValues={setSelectionValues}
+          minLoadMonth={minLoadMonth}
+          setMinLoadMonth={setMinLoadMonth}
+          {...sel}
+        />
+      );
+    });
+    return (
+      <div
+        style={{ display: "flex", marginTop: "5pt" }}
+        key={selGroup[0].selectionKey}
+      >
+        {selGroupContent}
+      </div>
+    );
+  });
+  const extraContent = (
     <div style={{ margin: "10pt" }}>
       <button
         onClick={() => setShowCategoryModal(true)}
@@ -62,31 +85,14 @@ const Selections = ({
         allTags={allTags}
       />
     </div>
-  ]
-  content.push(dropdownArgs.map((selGroup) => {
-    const selGroupContent = selGroup.map((sel) => {
-      return (
-        <DropdownFromList
-          key={sel.selectionKey}
-          selectionValues={selectionValues}
-          setSelectionValues={setSelectionValues}
-          minLoadMonth={minLoadMonth}
-          setMinLoadMonth={setMinLoadMonth}
-          {...sel}
-        />
-      );
-    });
-    return (
-      <div
-        style={{ display: "flex", marginTop: "5pt" }}
-        key={selGroup[0].selectionKey}
-      >
-        {selGroupContent}
-      </div>
-    );
-  }));
-  content.push(<hr />);
-  return <>{content}</>;
+  )
+  return (
+    <>
+      {content}
+      {extraContent}
+      <hr/>
+    </>
+  );
 };
 
 const DropdownFromList = ({
