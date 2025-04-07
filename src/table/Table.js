@@ -1,5 +1,5 @@
 import MaterialTable from "material-table";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import tableIcons from "./tableIcons";
 
 const Table = ({ transactions, filterValues = {} }) => {
@@ -19,17 +19,18 @@ const Table = ({ transactions, filterValues = {} }) => {
       col.defaultFilter = filterValues[col.field];
     }
   }
-  const [amtSum, setAmtSum] = useState(transactions.map(t => t.amount).reduce((a,b) => a + b));
-  const [numTrx, setNumTrx] = useState(transactions.length);
+  const [amtSum, setAmtSum] = useState(0);
+  const [numTrx, setNumTrx] = useState(0);
+  useEffect(() => {
+    setTimeout(() => {
+      setAmtSum((!!tableRef.current ? tableRef.current.state.data : transactions).map(t => t.amount).reduce((a,b) => a + b));
+      setNumTrx((!!tableRef.current ? tableRef.current.state.data : transactions).length);
+    }, 100)
+  }, [transactions, filterValues])
+
   const filterChange = () => {
-    let filterAmtSum = 0;
-    let filterNumTrx = 0;
-    for (const d of tableRef.current.state.data) {
-      filterAmtSum += d.amount;
-    }
-    filterNumTrx = tableRef.current.state.data.length;
-    setAmtSum(filterAmtSum);
-    setNumTrx(filterNumTrx);
+    setAmtSum(tableRef.current.state.data.map(t => t.amount).reduce((a,b) => a + b, 0));
+    setNumTrx(tableRef.current.state.data.length);
   }
   return (
     <div>
