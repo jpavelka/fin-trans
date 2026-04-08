@@ -1,5 +1,6 @@
 <script>
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { currentUser, txData, settings, loadingData, minLoadMonth, maxLoadMonth } from '$lib/stores.js';
   import { transformTransactions } from '$lib/utils/transactions.js';
   import { sortedUniqueArray, allTimesBetween } from '$lib/utils/utils.js';
@@ -7,7 +8,7 @@
   import Plot from '$lib/components/Plot.svelte';
   import Table from '$lib/components/Table.svelte';
 
-  $: if ($currentUser === null) goto('/login');
+  $: if ($currentUser === null) goto(`${base}/login`);
 
   // ── Filter state ────────────────────────────────────────────────────────────
   let sel = {

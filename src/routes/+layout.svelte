@@ -7,11 +7,11 @@
   import { initAuth, signOutUser } from '$lib/dataService.js';
   import '../app.css';
 
-  onMount(() => initAuth(() => goto('/login')));
+  onMount(() => initAuth(() => goto(`${base}/login`)));
 
   // Redirect signed-out users away from protected pages
   $: if ($currentUser === null && $page.url.pathname !== `${base}/login`) {
-    goto('/login');
+    goto(`${base}/login`);
   }
 </script>
 

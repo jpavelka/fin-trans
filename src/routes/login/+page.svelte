@@ -1,9 +1,10 @@
 <script>
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import { currentUser } from '$lib/stores.js';
   import { signInWithGoogle } from '$lib/dataService.js';
 
-  $: if ($currentUser) goto('/dashboard');
+  $: if ($currentUser) goto(`${base}/dashboard`);
 
   let error = '';
   async function handleGoogleSignIn() {

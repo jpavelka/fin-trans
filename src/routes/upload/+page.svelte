@@ -1,5 +1,6 @@
 <script>
   import { goto, beforeNavigate } from '$app/navigation';
+  import { base } from '$app/paths';
   import { onMount, onDestroy, afterUpdate } from 'svelte';
   import { currentUser, txData } from '$lib/stores.js';
   import { savePendingUploads, loadPendingUploads, clearPendingUploads, saveTransactions } from '$lib/dataService.js';
@@ -8,7 +9,7 @@
     Object.values($txData).flat().map(tx => tx.category).filter(Boolean)
   )].sort();
 
-  $: if ($currentUser === null) goto('/login');
+  $: if ($currentUser === null) goto(`${base}/login`);
 
   // ── Unsaved-changes guard ──────────────────────────────────────────────────
   const UNSAVED_MSG = 'You have unsaved transactions. Leave anyway?';
