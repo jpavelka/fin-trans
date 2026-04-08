@@ -84,22 +84,56 @@
     return addColors(traces);
   }
 
-  function buildLayout() {
+  function buildLayout(traces) {
     const title = `${timeFrame === 'month' ? 'Month' : 'Year'}ly Trends - ${txType === 'expense' ? 'Expenses' : 'Income'}${metaCategory === '_all' ? '' : ' - ' + metaCategory}`;
     const sub = `${dateFormat({ d: minTime, timeFrame })} - ${dateFormat({ d: maxTime, timeFrame })}`;
-    const legend = narrow
-      ? { orientation: 'h', yanchor: 'top', y: -0.2, xanchor: 'left', x: 0 }
-      : { orientation: 'v' };
-    const margin = narrow
-      ? { l: 30, r: 10, t: 90, b: 160 }
-      : { l: 50, r: 10, t: 80, b: 60 };
-    return { title: `${title}<br><sub>${sub}</sub>`, autosize: true, hovermode: 'closest', legend, margin };
+
+    const layout = { 
+      title: `${title}<br><sub>${sub}</sub>`, 
+      autosize: true, 
+      hovermode: 'closest' 
+    };
+
+    if (narrow) {
+      // Find how many categories are in the legend (ignoring averages)
+      const numCategories = traces.filter(t => !t._isAvg).length;
+      
+      // On narrow screens, long category names usually stack 1 per row. (~22px per row)
+      const legendHeight = numCategories * 22; 
+      
+      // Define a fixed height for the line chart area so it NEVER gets squished
+      const PLOT_AREA_HEIGHT = 250; 
+      
+      const tMargin = 90;
+      const bMargin = 80 + legendHeight; // 80px for x-axis dates + space for legend
+
+      // Explicitly set the total canvas height so Plotly draws the full legend
+      layout.height = tMargin + PLOT_AREA_HEIGHT + bMargin;
+      layout.margin = { l: 30, r: 10, t: tMargin, b: bMargin };
+
+      // legend.y is a fraction of PLOT_AREA_HEIGHT. 
+      // We push it down by exactly 80px (to clear the rotated dates)
+      const yOffset = -(80 / PLOT_AREA_HEIGHT);
+      layout.legend = { orientation: 'h', yanchor: 'top', y: yOffset, xanchor: 'left', x: 0 };
+
+    } else {
+      layout.margin = { l: 50, r: 10, t: 80, b: 60 };
+      layout.legend = { orientation: 'v' };
+      // layout.height is left undefined so it auto-fills the container on desktop
+    }
+
+    return layout;
   }
 
   function renderPlot() {
     if (!Plotly || !el || !minTime || !maxTime) return;
-    const layout = buildLayout();
-    Plotly.react(el, buildData(), layout);
+    
+    // 1. Build data first so we can measure the legend size
+    const data = buildData();
+    const layout = buildLayout(data);
+    
+    Plotly.react(el, data, layout);
+    
     el.removeAllListeners?.('plotly_click');
     el.on('plotly_click', (event) => {
       const pt = event.points[0];
@@ -141,5 +175,8 @@
     flex: 1;
     min-height: 0;
     height: calc(100% - 32px);
+    /* Keep the plot neatly inside the card, but allow scrolling if it gets too tall */
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 </style>
