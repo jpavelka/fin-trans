@@ -448,6 +448,13 @@
     const tr    = td.closest('tr');
     const isNav = e.target === navInput;
 
+    if (e.key === 'Home' && e.ctrlKey) {
+      e.preventDefault();
+      const firstInput = tr.closest('tbody')?.querySelector('tr input[type="text"],tr input[type="date"]');
+      if (firstInput) moveToCell(firstInput);
+      return;
+    }
+
     if (e.key === 'd' && e.ctrlKey) {
       e.preventDefault();
       const rowId = displayRows[Array.from(tr.closest('tbody').querySelectorAll('tr')).indexOf(tr)]?._id;
@@ -472,27 +479,40 @@
       return;
     }
 
-    if (e.key === 'Tab' && e.target.list) {
+    if (e.key === 'Tab' && e.target.list && !isNav) {
+      // If Enter just accepted a suggestion the dropdown is closed; let Tab move
+      // to the next cell normally instead of starting a new cycling session.
+      if (suggestionJustAccepted) {
+        suggestionJustAccepted = false;
+        return; // no preventDefault → browser Tab moves focus to next cell
+      }
       const input   = e.target;
       const options = Array.from(input.list.options).map(o => o.value);
-      const current = input.value;
-      const lower   = current.toLowerCase();
+      // Keep the same filter base for the whole cycling session so the match list
+      // stays stable and wrap-around works after the first suggestion is selected.
+      if (cycleBase === null) cycleBase = input.value;
+      const lower   = cycleBase.toLowerCase();
       const matches = [
         ...options.filter(o => o.toLowerCase().startsWith(lower)),
         ...options.filter(o => !o.toLowerCase().startsWith(lower) && o.toLowerCase().includes(lower)),
       ];
-      if (matches.length >= 2 || (matches.length === 1 && matches[0] !== current)) {
+      if (matches.length >= 2 || (matches.length === 1 && matches[0] !== input.value)) {
         e.preventDefault();
-        const idx  = matches.indexOf(current);
+        const idx  = matches.indexOf(input.value);
         const next = e.shiftKey
           ? matches[(idx - 1 + matches.length) % matches.length]
           : matches[(idx + 1) % matches.length];
         input.value = next;
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.setSelectionRange(next.length, next.length);
+      } else {
+        cycleBase = null;
       }
       return;
     }
+
+    // Any non-Tab key resets the cycling session.
+    if (e.target.list) cycleBase = null;
 
     if (e.key === 'Enter') {
       if (isNav) {
@@ -513,6 +533,7 @@
           input.value = match;
           input.dispatchEvent(new Event('input', { bubbles: true }));
           input.setSelectionRange(match.length, match.length);
+          suggestionJustAccepted = true;
           return;
         }
       }
@@ -561,6 +582,8 @@
       enterEditMode(e.target);
     }
   }
+
+  function onCellBlur() { isEditingCell = false; cycleBase = null; suggestionJustAccepted = false; }
 
   function openSplitModal(row) { splitRow = row; splitAmounts = ['']; }
   function closeSplitModal()   { splitRow = null; }
@@ -635,6 +658,10 @@
 
   function onWindowKeydown(e) {
     if (e.key === 'z' && e.ctrlKey && !e.shiftKey) undo();
+    if (e.key === 'Home' && e.ctrlKey) {
+      const firstInput = tableWrapEl?.querySelector('tbody tr input[type="text"],tbody tr input[type="date"]');
+      if (firstInput) { e.preventDefault(); moveToCell(firstInput); }
+    }
   }
 
   onMount(() => {
@@ -648,18 +675,30 @@
   // ── Sorting ────────────────────────────────────────────────────────────────
   let sortKey = 'date';
   let sortDir = 1; // 1 = asc, -1 = desc
+  let isEditingCell = false;
+  let cachedDisplayRows = [];
+  let cycleBase = null;            // original typed text when Tab-cycling through category suggestions
+  let suggestionJustAccepted = false; // true after Enter accepts a suggestion; clears on next Tab
 
   function toggleSort(key) {
     if (sortKey === key) sortDir = -sortDir;
     else { sortKey = key; sortDir = key === 'amount' ? -1 : 1; }
   }
 
-  $: displayRows = [...rows].sort((a, b) => {
-    const av = a[sortKey] ?? '';
-    const bv = b[sortKey] ?? '';
-    if (sortKey === 'amount') return (parseFloat(av) - parseFloat(bv)) * sortDir;
-    return String(av).localeCompare(String(bv)) * sortDir;
-  });
+  // Compute sort whenever rows/sortKey/sortDir change, but only commit the
+  // result to cachedDisplayRows when no cell is actively focused — this
+  // prevents rows from jumping while the user is typing in a cell.
+  $: {
+    const sorted = [...rows].sort((a, b) => {
+      const av = a[sortKey] ?? '';
+      const bv = b[sortKey] ?? '';
+      if (sortKey === 'amount') return (parseFloat(av) - parseFloat(bv)) * sortDir;
+      return String(av).localeCompare(String(bv)) * sortDir;
+    });
+    if (!isEditingCell) cachedDisplayRows = sorted;
+  }
+
+  $: displayRows = cachedDisplayRows;
 </script>
 
 <div class="page">
@@ -839,6 +878,8 @@
                       on:keydown={onCellKeydown}
                       on:mousedown={onCellMousedown}
                       on:change={() => savedAsPending = false}
+                      on:focus={() => isEditingCell = true}
+                      on:blur={onCellBlur}
                     />
                   {:else}
                     <input
@@ -850,6 +891,8 @@
                       on:keydown={onCellKeydown}
                       on:mousedown={onCellMousedown}
                       on:input={() => savedAsPending = false}
+                      on:focus={() => isEditingCell = true}
+                      on:blur={onCellBlur}
                     />
                   {/if}
                 </td>

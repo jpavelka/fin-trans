@@ -88,14 +88,12 @@
     const title = `${timeFrame === 'month' ? 'Month' : 'Year'}ly Trends - ${txType === 'expense' ? 'Expenses' : 'Income'}${metaCategory === '_all' ? '' : ' - ' + metaCategory}`;
     const sub = `${dateFormat({ d: minTime, timeFrame })} - ${dateFormat({ d: maxTime, timeFrame })}`;
     const legend = narrow
-      ? { orientation: 'h', yanchor: 'top', y: -0.15, xanchor: 'center', x: 0.5, entrywidth: 100 }
+      ? { orientation: 'h', yanchor: 'top', y: -0.2, xanchor: 'left', x: 0 }
       : { orientation: 'v' };
-    const width  = el?.clientWidth  ?? 400;
-    const height = el?.clientHeight ?? 450;
     const margin = narrow
-      ? { l: 30, r: 10, t: 90, b: 130 }
+      ? { l: 30, r: 10, t: 90, b: 160 }
       : { l: 50, r: 10, t: 80, b: 60 };
-    return { title: `${title}<br><sub>${sub}</sub>`, width, height, autosize: false, hovermode: 'closest', legend, margin };
+    return { title: `${title}<br><sub>${sub}</sub>`, autosize: true, hovermode: 'closest', legend, margin };
   }
 
   function renderPlot() {
