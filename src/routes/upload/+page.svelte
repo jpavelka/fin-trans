@@ -779,7 +779,10 @@
       <input type="file" accept=".csv" on:change={onFileInput} style="display:none" />
       <span class="drop-icon">📂</span>
       <span>Drop a CSV file here, or <u>click to browse</u></span>
-      <span class="drop-hint">Expects Empower CSV format: Date, Account, Description, Category, Tags, Amount</span>
+      <span class="drop-hint">
+        Expects
+        <a href="https://participant.empower-retirement.com/participant/#/login" target="_blank">Empower</a>
+        CSV format: Date, Account, Description, Category, Tags, Amount</span>
     </label>
     <div class="manual-entry-bar">
       <span>or</span>
@@ -845,13 +848,13 @@
                     <span
                       class="transfer-label"
                       class:transfer-label-active={highlightedGroup === row._transferGroup}
-                      title="Click to highlight both rows in this pair"
+                      title="Click to highlight all rows in group {transferGroupSizes.get(row._transferGroup)}"
                       role="button"
                       tabindex="0"
                       on:click={() => toggleHighlight(row._transferGroup)}
                       on:keydown={(e) => e.key === 'Enter' && toggleHighlight(row._transferGroup)}
                     >↕{row._transferGroup} <span class="transfer-label-size">({transferGroupSizes.get(row._transferGroup)})</span></span>
-                    <button class="icon-btn delete-pair-btn" title="Delete both rows in this pair"
+                    <button class="icon-btn delete-pair-btn" title="Delete all rows in group {transferGroupSizes.get(row._transferGroup)}"
                       on:click={() => deletePair(row._transferGroup)}>🗑</button>
                     <button class="icon-btn unmark-btn" title="Unmark as transfer"
                       on:click={() => unmarkPair(row._transferGroup)}>↩</button>
@@ -1355,7 +1358,8 @@
   }
 
   /* Editable inputs look like plain text */
-  td input[type="text"] {
+  td input[type="text"],
+  td input[type="date"] {
     border: 1px solid transparent;
     background: transparent;
     padding: 3px 4px;
@@ -1364,9 +1368,12 @@
     min-width: 60px;
     border-radius: 3px;
   }
-  td input[type="text"]:hover { border-color: var(--color-border); background: white; }
-  td input[type="text"]:focus { border-color: var(--color-primary); background: white; outline: none; }
-  td input[type="text"][data-nav] { border-color: var(--color-primary); background: #eef3fd; outline: none; caret-color: transparent; }
+  td input[type="text"]:hover,
+  td input[type="date"]:hover { border-color: var(--color-border); background: white; }
+  td input[type="text"]:focus,
+  td input[type="date"]:focus { border-color: var(--color-primary); background: white; outline: none; }
+  td input[type="text"][data-nav],
+  td input[type="date"][data-nav] { border-color: var(--color-primary); background: #eef3fd; outline: none; caret-color: transparent; }
   td input[type="text"].numeric { text-align: right; }
 
   /* Questions column */
