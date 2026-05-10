@@ -155,16 +155,38 @@
   let rows = [];
   let fileName = '';
   let dragOver = false;
+  let addMoreFileEl;
+  let fileLoading = false;
 
   function loadFile(file) {
     if (!file || !file.name.endsWith('.csv')) return;
     fileName = file.name;
+    fileLoading = true;
     const reader = new FileReader();
-    reader.onload = (e) => { rows = csvToRows(e.target.result); selectedIds = new Set(); savedAsPending = false; };
+    reader.onload = (e) => { rows = csvToRows(e.target.result); selectedIds = new Set(); savedAsPending = false; fileLoading = false; };
+    reader.readAsText(file);
+  }
+
+  function loadMoreFile(file) {
+    if (!file || !file.name.endsWith('.csv')) return;
+    fileLoading = true;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const newRows = csvToRows(e.target.result);
+      if (newRows.length) {
+        const maxId = rows.reduce((max, r) => Math.max(max, r._id), -1);
+        const appended = newRows.map((r, i) => ({ ...r, _id: maxId + 1 + i }));
+        rows = [...rows, ...appended];
+        fileName = fileName + ' + ' + file.name;
+        savedAsPending = false;
+      }
+      fileLoading = false;
+    };
     reader.readAsText(file);
   }
 
   function onFileInput(e) { loadFile(e.target.files[0]); }
+  function onAddMoreFileInput(e) { loadMoreFile(e.target.files[0]); if (addMoreFileEl) addMoreFileEl.value = ''; }
   function onDrop(e) { e.preventDefault(); dragOver = false; loadFile(e.dataTransfer.files[0]); }
 
   // ── Undo ───────────────────────────────────────────────────────────────────
@@ -748,6 +770,10 @@
     {#if rows.length}
       <div class="toolbar-row toolbar-row-secondary">
         <button on:click={findTransfers}>Find Transfers</button>
+        <input type="file" accept=".csv" bind:this={addMoreFileEl} on:change={onAddMoreFileInput} style="display:none" />
+        <button disabled={fileLoading} on:click={() => addMoreFileEl.click()}>
+          {fileLoading ? 'Loading…' : '+ Load more from file'}
+        </button>
         {#if transferGroupCount > 0}
           <span class="transfer-badge">
             {transferGroupCount} transfer {transferGroupCount === 1 ? 'group' : 'groups'}
@@ -769,6 +795,12 @@
   </div>
 
   {#if !rows.length}
+    {#if fileLoading}
+      <div class="drop-zone loading-zone">
+        <span class="loading-spinner"></span>
+        <span>Reading file…</span>
+      </div>
+    {:else}
     <label
       class="drop-zone"
       class:drag-over={dragOver}
@@ -784,6 +816,8 @@
         <a href="https://participant.empower-retirement.com/participant/#/login" target="_blank">Empower</a>
         CSV format: Date, Account, Description, Category, Tags, Amount</span>
     </label>
+    {/if}
+    {#if !fileLoading}
     <div class="manual-entry-bar">
       <span>or</span>
       <button on:click={addRow}>+ Enter transactions by hand</button>
@@ -796,6 +830,7 @@
           {pendingStatus === 'loading' ? 'Loading…' : 'Resume pending upload'}
         </button>
       </div>
+    {/if}
     {/if}
   {:else}
     <p class="file-name">📄 {fileName}</p>
@@ -1114,6 +1149,23 @@
   .drop-icon { font-size: 40px; }
   .drop-hint { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
 
+  .loading-zone {
+    cursor: default;
+    gap: 14px;
+  }
+  .loading-zone:hover { border-color: var(--color-border); background: var(--color-surface); color: var(--color-text-muted); }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   .manual-entry-bar {
     display: flex;
     align-items: center;
@@ -1356,6 +1408,7 @@
     font-size: 13px;
     color: var(--color-danger);
   }
+
 
   /* Editable inputs look like plain text */
   td input[type="text"],
