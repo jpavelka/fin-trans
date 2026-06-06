@@ -184,12 +184,20 @@
     const _colRegex = colRegex;
     const _sortField = sortField;
     const _sortDir = sortDir;
+    const _globalSearchFilter = makeFilter(globalSearch.trim(), globalSearchRegex);
     let rows = transactions.filter((tx) => {
       if (_dateMin && tx.date < _dateMin) return false;
       if (_dateMax && tx.date > _dateMax) return false;
       const amt = tx.amount || 0;
       if (_amountMin !== '' && !isNaN(parseFloat(_amountMin)) && amt < parseFloat(_amountMin)) return false;
       if (_amountMax !== '' && !isNaN(parseFloat(_amountMax)) && amt > parseFloat(_amountMax)) return false;
+      if (_globalSearchFilter) {
+        const haystack = columns.map(col => {
+          if (col.currency) return currencyFormat(tx[col.field] || 0);
+          return cellValue(tx, col);
+        }).join(' ');
+        if (!matchesFilter(haystack, _globalSearchFilter)) return false;
+      }
       return columns
         .filter(col => col.field !== 'date' && col.field !== 'amount')
         .every((col) => {
@@ -207,6 +215,9 @@
   }
 
   $: total = displayed.reduce((s, tx) => s + (tx.amount || 0), 0);
+
+  let globalSearch = '';
+  let globalSearchRegex = false;
 
   let editingTx = null; // tx open in edit modal
   let deleting = null;  // tx being confirmed
@@ -250,6 +261,17 @@
 
 <div class="table-header-row">
   <span class="summary">{currencyFormat(total)} &nbsp;·&nbsp; {displayed.length} transactions</span>
+  <div class="global-search" class:invalid-regex={globalSearchRegex && !!globalSearch && (() => { try { new RegExp(globalSearch); return false; } catch { return true; } })()}>
+    <div class="input-with-clear">
+      <input type="text" placeholder={globalSearchRegex ? 'regex…' : 'Search all columns…'} bind:value={globalSearch} />
+      {#if globalSearch}<button class="clear-btn" on:click={() => (globalSearch = '')}>×</button>{/if}
+    </div>
+    <div class="regex-toggle" class:active={globalSearchRegex} title="Toggle regex"
+      on:click={() => { globalSearchRegex = !globalSearchRegex; }}>
+      .*
+      <div class="track"><div class="thumb"></div></div>
+    </div>
+  </div>
 </div>
 
 <div class="table-wrap">
@@ -407,6 +429,33 @@
   .summary {
     font-size: 13px;
   }
+
+  .global-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: normal;
+  }
+
+  .global-search .input-with-clear {
+    width: 220px;
+  }
+
+  .global-search input {
+    font-size: 13px;
+    padding: 3px 22px 3px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .global-search.invalid-regex input {
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
+
+  .global-search .clear-btn:hover { color: #333; }
 
   .table-wrap {
     overflow-x: auto;
