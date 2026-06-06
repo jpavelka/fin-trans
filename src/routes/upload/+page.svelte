@@ -220,21 +220,18 @@
 
   // ── Pending saves ──────────────────────────────────────────────────────────
   let pendingStatus = '';   // '' | 'saving' | 'saved' | 'loading' | 'error'
-  let hasPending = false;   // whether a non-empty pending save exists
+  let pendingAutoLoaded = false;
 
-  async function checkForPending() {
-    const saved = await loadPendingUploads().catch(() => null);
-    hasPending = Array.isArray(saved) && saved.length > 0;
+  // Auto-load pending upload once when user signs in
+  $: if ($currentUser && !pendingAutoLoaded) {
+    pendingAutoLoaded = true;
+    resumePending();
   }
-
-  // Check on mount (after auth resolves)
-  $: if ($currentUser) checkForPending();
 
   async function saveAsPending() {
     pendingStatus = 'saving';
     try {
       await savePendingUploads(rows);
-      hasPending = rows.length > 0;
       pendingStatus = 'saved';
       savedAsPending = true;
       setTimeout(() => { if (pendingStatus === 'saved') pendingStatus = ''; }, 2500);
@@ -282,7 +279,6 @@
     try {
       const summary = await saveTransactions(rows);
       await clearPendingUploads();
-      hasPending = false;
       rows = [];
       fileName = '';
       selectedIds = new Set();
@@ -823,14 +819,6 @@
       <button on:click={addRow}>+ Enter transactions by hand</button>
     </div>
 
-    {#if hasPending}
-      <div class="pending-resume-bar">
-        <span>You have a pending upload saved.</span>
-        <button class="primary" on:click={resumePending} disabled={pendingStatus === 'loading'}>
-          {pendingStatus === 'loading' ? 'Loading…' : 'Resume pending upload'}
-        </button>
-      </div>
-    {/if}
     {/if}
   {:else}
     <p class="file-name">📄 {fileName}</p>
@@ -1389,19 +1377,6 @@
     color: var(--color-danger);
     font-size: 13px;
     margin: 8px 0 0;
-  }
-
-  .pending-resume-bar {
-    margin-top: 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    background: #fffbeb;
-    border: 1px solid #fcd34d;
-    border-radius: var(--radius);
-    font-size: 13px;
-    color: #92400e;
   }
 
   .pending-error {
