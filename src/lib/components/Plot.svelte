@@ -5,6 +5,7 @@
 
   export let plotTx;
   export let sel;
+  export let includeAverages = true;
 
   const dispatch = createEventDispatcher();
 </script>
@@ -18,6 +19,7 @@
       timeFrame={sel.timeFrame}
       minTime={sel.minTime}
       maxTime={sel.maxTime}
+      bind:includeAverages
       on:filterChange
     />
   {:else}

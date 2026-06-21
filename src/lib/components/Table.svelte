@@ -1,11 +1,15 @@
 <script>
   import { onDestroy } from 'svelte';
+  import dayjs from 'dayjs';
   import { currencyFormat } from '$lib/utils/plotUtils.js';
   import { deleteTransaction, updateTransaction } from '$lib/dataService.js';
   import EditTransactionModal from '$lib/components/EditTransactionModal.svelte';
 
   export let transactions = [];
   export let tableFilters = {};
+  // Bindable: the filtered + sorted rows currently shown (consumed by the plot
+  // when "apply table filters" is enabled on the dashboard).
+  export let filteredTransactions = [];
 
   // Column definitions
   const columns = [
@@ -66,9 +70,17 @@
     const incomingDateFilter = tableFilters?.date;
     for (const [k, v] of Object.entries(tableFilters || {})) {
       if (k === 'date') {
-        // YYYY-MM from plot click → expand to full month range
-        if (/^\d{4}-\d{2}$/.test(v)) { newSeedMin = v + '-01'; newSeedMax = v + '-31'; }
-        else { newSeedMin = v; newSeedMax = v; }
+        if (/^\d{4}-\d{2}$/.test(v)) {
+          // YYYY-MM from plot click → expand to full month (real last day)
+          newSeedMin = v + '-01';
+          newSeedMax = dayjs(v + '-01').endOf('month').format('YYYY-MM-DD');
+        } else if (/^\d{4}$/.test(v)) {
+          // YYYY from a year-timeframe plot click → expand to full year
+          newSeedMin = v + '-01-01';
+          newSeedMax = v + '-12-31';
+        } else {
+          newSeedMin = v; newSeedMax = v;
+        }
       } else {
         newFilters[k] = v;
       }
@@ -214,10 +226,29 @@
     displayed = rows;
   }
 
+  $: filteredTransactions = displayed;
+
   $: total = displayed.reduce((s, tx) => s + (tx.amount || 0), 0);
 
   let globalSearch = '';
   let globalSearchRegex = false;
+
+  $: hasActiveFilters = !!(
+    dateMin || dateMax || amountMin !== '' || amountMax !== '' ||
+    globalSearch || Object.values(colFilters).some(Boolean)
+  );
+
+  function clearFilters() {
+    colFilters = {};
+    colRegex = {};
+    dateMin = '';
+    dateMax = '';
+    amountMin = '';
+    amountMax = '';
+    globalSearch = '';
+    globalSearchRegex = false;
+    closeAc();
+  }
 
   let editingTx = null; // tx open in edit modal
   let deleting = null;  // tx being confirmed
@@ -272,6 +303,9 @@
       <div class="track"><div class="thumb"></div></div>
     </div>
   </div>
+  <button class="clear-filters-btn" on:click={clearFilters} disabled={!hasActiveFilters}>
+    Clear filters
+  </button>
 </div>
 
 <div class="table-wrap">
@@ -421,7 +455,8 @@
   .table-header-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
     margin-bottom: 8px;
     font-weight: 600;
   }
@@ -437,8 +472,14 @@
     font-weight: normal;
   }
 
+  .global-search {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
   .global-search .input-with-clear {
-    width: 220px;
+    width: 100%;
+    max-width: 220px;
   }
 
   .global-search input {
@@ -456,6 +497,27 @@
   }
 
   .global-search .clear-btn:hover { color: #333; }
+
+  .clear-filters-btn {
+    font-size: 13px;
+    font-weight: normal;
+    padding: 4px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .clear-filters-btn:hover:not(:disabled) {
+    background: #f0f0f0;
+    border-color: #aaa;
+  }
+
+  .clear-filters-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
 
   .table-wrap {
     overflow-x: auto;

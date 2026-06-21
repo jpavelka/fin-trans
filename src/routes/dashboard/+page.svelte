@@ -31,6 +31,13 @@
   let tableFilters = {};
   let showPlot = true;
   let showTable = true;
+  let applyTableFilters = false;
+  let includeAverages = true;
+  let tableFilteredTx = [];
+
+  // What the plot draws: the table's filtered rows when the toggle is on,
+  // otherwise the full filtered set.
+  $: plotInputTx = applyTableFilters ? tableFilteredTx : displayTx;
 
   // ── Initialise version defaults + time range once settings arrive ────────────
   $: if ($settings?.general && $minLoadMonth && $maxLoadMonth) {
@@ -148,11 +155,26 @@
         </div>
         {#if showPlot}
           <div class="card-body plot-body">
-            <Plot
-              plotTx={displayTx}
-              {sel}
-              on:filterChange={(e) => (tableFilters = e.detail)}
-            />
+            <div class="plot-toggles">
+              {#if sel.plotType === 'trend'}
+                <label class="plot-toggle">
+                  <input type="checkbox" bind:checked={includeAverages} />
+                  Include Avg.
+                </label>
+              {/if}
+              <label class="plot-toggle">
+                <input type="checkbox" bind:checked={applyTableFilters} />
+                Apply table filters
+              </label>
+            </div>
+            <div class="plot-holder">
+              <Plot
+                plotTx={plotInputTx}
+                {sel}
+                bind:includeAverages
+                on:filterChange={(e) => (tableFilters = e.detail)}
+              />
+            </div>
           </div>
         {/if}
       </div>
@@ -166,7 +188,7 @@
         </div>
         {#if showTable}
           <div class="card-body">
-            <Table transactions={displayTx} {tableFilters} />
+            <Table transactions={displayTx} {tableFilters} bind:filteredTransactions={tableFilteredTx} />
           </div>
         {/if}
       </div>
@@ -184,6 +206,33 @@
   .plot-body {
     height: 520px;
     padding: 8px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .plot-holder {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .plot-toggles {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+
+  .plot-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .plot-toggle input {
+    width: auto;
+    cursor: pointer;
   }
 
   .toggle-arrow {
