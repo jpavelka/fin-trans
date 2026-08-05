@@ -13,6 +13,7 @@
   const dispatch = createEventDispatcher();
 
   export let includeAverages = true;
+  export let legendAmount = 'total'; // 'total' | 'average'
   let cw = 0;
   let ch = 0;
   let hiddenSeries = new Set();
@@ -37,10 +38,12 @@
         time = incrementTime({ timeFrame, time });
       }
       const total = y.reduce((a, b) => a + b, 0);
+      const avg = y.length ? total / y.length : 0;
+      const legendVal = legendAmount === 'average' ? avg : total;
       const trace = {
         _cat: cat,
         _groupOn: groupOn,
-        name: `${catName} - ${currencyFormat(total)}`,
+        name: `${catName} - ${currencyFormat(legendVal)}`,
         type: 'scatter',
         text,
         x,
@@ -48,7 +51,6 @@
       };
       traces.push(trace);
       if (includeAverages) {
-        const avg = total / y.length;
         traces.push({
           ...trace,
           _cat: cat + '_avg',
@@ -73,7 +75,7 @@
   // Recompute everything reactively from inputs + layout state. The explicit
   // deps array ensures Svelte re-runs when any of these change (they are only
   // read inside buildData/computeChart, which Svelte can't see on its own).
-  $: deps = [plotTx, txType, metaCategory, timeFrame, minTime, maxTime, includeAverages, hiddenSeries, cw, ch, narrow];
+  $: deps = [plotTx, txType, metaCategory, timeFrame, minTime, maxTime, includeAverages, legendAmount, hiddenSeries, cw, ch, narrow];
   $: chart = (deps && plotTx && minTime && maxTime && cw > 0)
     ? computeChart(buildData())
     : null;

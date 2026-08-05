@@ -189,6 +189,23 @@
   function onAddMoreFileInput(e) { loadMoreFile(e.target.files[0]); if (addMoreFileEl) addMoreFileEl.value = ''; }
   function onDrop(e) { e.preventDefault(); dragOver = false; loadFile(e.dataTransfer.files[0]); }
 
+  // Page-level drag-and-drop to append a file when the table already has rows.
+  // (The empty-state drop zone handles the initial load.) A depth counter keeps
+  // the overlay stable while dragging over nested children.
+  let dragDepth = 0;
+  $: pageDragActive = dragDepth > 0;
+  const isFileDrag = (e) => e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
+
+  function onPageDragEnter(e) { if (rows.length && isFileDrag(e)) dragDepth++; }
+  function onPageDragLeave() { if (rows.length && dragDepth > 0) dragDepth--; }
+  function onPageDragOver(e) { if (rows.length && isFileDrag(e)) e.preventDefault(); }
+  function onPageDrop(e) {
+    if (!rows.length) return;
+    e.preventDefault();
+    dragDepth = 0;
+    loadMoreFile(e.dataTransfer.files[0]);
+  }
+
   // ── Undo ───────────────────────────────────────────────────────────────────
   let undoSnapshot = null;
   let undoTimer = null;
@@ -273,11 +290,21 @@
     toastTimer = setTimeout(() => { toast = null; }, 6000);
   }
 
+  // A row is blank when none of its user-editable data fields have content.
+  const isBlankRow = (r) =>
+    ['date', 'account', 'description', 'category', 'tags', 'amount', 'comments']
+      .every((k) => !String(r[k] ?? '').trim());
+
   async function saveToFirestore() {
-    if (!window.confirm(`Save ${rows.length} transaction${rows.length === 1 ? '' : 's'} to Firestore?`)) return;
+    const toSave = rows.filter((r) => !isBlankRow(r));
+    if (!toSave.length) {
+      window.alert('No transactions to save — all rows are blank.');
+      return;
+    }
+    if (!window.confirm(`Save ${toSave.length} transaction${toSave.length === 1 ? '' : 's'} to Firestore?`)) return;
     saveStatus = 'saving';
     try {
-      const summary = await saveTransactions(rows);
+      const summary = await saveTransactions(toSave);
       await clearPendingUploads();
       rows = [];
       fileName = '';
@@ -639,7 +666,8 @@
                     tags: 120, amount: 90, comments: 180, questions: 200 };
   const ACTION_COL_W = 84;
   const CHECK_COL_W  = 32;
-  $: tableWidth = Object.values(colWidths).reduce((a, b) => a + b, 0) + ACTION_COL_W + CHECK_COL_W;
+  const NUM_COL_W    = 24;
+  $: tableWidth = Object.values(colWidths).reduce((a, b) => a + b, 0) + ACTION_COL_W + CHECK_COL_W + NUM_COL_W;
 
   let resizing = null; // { key, startX, startWidth }
 
@@ -719,7 +747,21 @@
   $: displayRows = cachedDisplayRows;
 </script>
 
-<div class="page">
+<div
+  class="page"
+  on:dragenter={onPageDragEnter}
+  on:dragleave={onPageDragLeave}
+  on:dragover={onPageDragOver}
+  on:drop={onPageDrop}
+>
+  {#if pageDragActive && rows.length}
+    <div class="page-drop-overlay">
+      <div class="page-drop-message">
+        <span class="drop-icon">📂</span>
+        Drop CSV to add more transactions
+      </div>
+    </div>
+  {/if}
   <div class="toolbar">
     <div class="toolbar-row">
       <h2 style="margin:0">Upload Transactions</h2>
@@ -826,6 +868,7 @@
       <table style="width:{tableWidth}px; table-layout:fixed">
         <thead>
           <tr>
+            <th class="col-num"></th>
             <th class="col-check">
               <input type="checkbox"
                 checked={allDisplaySelected}
@@ -858,6 +901,7 @@
               class:has-question={row.questions.trim() !== ''}
               class:is-selected={selectedIds.has(row._id)}
             >
+              <td class="col-num">{i + 1}</td>
               <td class="col-check">
                 <input type="checkbox"
                   checked={selectedIds.has(row._id)}
@@ -929,6 +973,11 @@
       </table>
     </div>
     <button class="add-row-btn" on:click={addRow}>+ Add row</button>
+    <p class="format-hint">
+      Expects
+      <a href="https://participant.empower-retirement.com/participant/#/login" target="_blank">Empower</a>
+      CSV format: Date, Account, Description, Category, Tags, Amount
+    </p>
   {/if}
 </div>
 
@@ -1235,6 +1284,17 @@
   .col-check { width: 32px; text-align: center; padding: 2px; }
   thead th.col-check { cursor: default; }
 
+  .col-num {
+    width: 24px;
+    text-align: right;
+    padding: 2px 4px 2px 1px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+  thead th.col-num { cursor: default; }
+
   tbody tr.is-selected                    { background: #eff6ff; }
   tbody tr.is-selected:hover              { background: #dbeafe; }
   tbody tr.is-selected.is-transfer        { background: #ede9fe; }
@@ -1359,6 +1419,38 @@
     width: 100%;
   }
   .add-row-btn:hover { background: #f0f6ff; }
+
+  .format-hint {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  .page-drop-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(46, 108, 224, 0.08);
+    pointer-events: none;
+  }
+
+  .page-drop-message {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: var(--color-surface);
+    border: 2px dashed var(--color-primary);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
 
   .add-split-btn {
     font-size: 13px;

@@ -6,6 +6,7 @@
   export let plotTx;
   export let sel;
   export let includeAverages = true;
+  export let legendAmount = 'total';
 
   const dispatch = createEventDispatcher();
 </script>
@@ -20,6 +21,7 @@
       minTime={sel.minTime}
       maxTime={sel.maxTime}
       bind:includeAverages
+      bind:legendAmount
       on:filterChange
     />
   {:else}

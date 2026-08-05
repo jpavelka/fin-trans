@@ -7,6 +7,7 @@
   import Selections from '$lib/components/Selections.svelte';
   import Plot from '$lib/components/Plot.svelte';
   import Table from '$lib/components/Table.svelte';
+  import PlotSettings from '$lib/components/PlotSettings.svelte';
 
   $: if ($currentUser === null) goto(`${base}/login`);
 
@@ -33,7 +34,15 @@
   let showTable = true;
   let applyTableFilters = false;
   let includeAverages = true;
+  let legendAmount = 'total'; // 'total' | 'average'
   let tableFilteredTx = [];
+
+  // Below this width the plot toggles collapse into a Settings modal.
+  const NARROW_TOGGLES = 560;
+  let plotBodyWidth = 0;
+  let showSettings = false;
+  $: narrowToggles = plotBodyWidth > 0 && plotBodyWidth < NARROW_TOGGLES;
+  $: if (!narrowToggles) showSettings = false;
 
   // What the plot draws: the table's filtered rows when the toggle is on,
   // otherwise the full filtered set.
@@ -154,30 +163,55 @@
           <span class="toggle-arrow">{showPlot ? '▲' : '▼'}</span>
         </div>
         {#if showPlot}
-          <div class="card-body plot-body">
-            <div class="plot-toggles">
-              {#if sel.plotType === 'trend'}
-                <label class="plot-toggle">
-                  <input type="checkbox" bind:checked={includeAverages} />
-                  Include Avg.
-                </label>
+          <div class="card-body plot-body" bind:clientWidth={plotBodyWidth}>
+            <div class="plot-toolbar">
+              {#if narrowToggles}
+                <button class="settings-btn" on:click={() => (showSettings = true)}>
+                  ⚙ Settings
+                </button>
+              {:else}
+                <PlotSettings
+                  plotType={sel.plotType}
+                  timeFrame={sel.timeFrame}
+                  bind:includeAverages
+                  bind:legendAmount
+                  bind:applyTableFilters
+                />
               {/if}
-              <label class="plot-toggle">
-                <input type="checkbox" bind:checked={applyTableFilters} />
-                Apply table filters
-              </label>
             </div>
             <div class="plot-holder">
               <Plot
                 plotTx={plotInputTx}
                 {sel}
                 bind:includeAverages
+                bind:legendAmount
                 on:filterChange={(e) => (tableFilters = e.detail)}
               />
             </div>
           </div>
         {/if}
       </div>
+
+      {#if showSettings}
+        <div class="modal-overlay" on:click|self={() => (showSettings = false)}>
+          <div class="modal">
+            <div class="modal-header">Plot Settings</div>
+            <div class="modal-body">
+              <PlotSettings
+                plotType={sel.plotType}
+                timeFrame={sel.timeFrame}
+                vertical
+                bind:includeAverages
+                bind:legendAmount
+                bind:applyTableFilters
+              />
+            </div>
+            <div class="modal-footer">
+              <button class="primary" on:click={() => (showSettings = false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      {/if}
 
       <!-- Table section -->
       <div class="card">
@@ -215,23 +249,19 @@
     min-height: 0;
   }
 
-  .plot-toggles {
+  .plot-toolbar {
     display: flex;
     align-items: center;
-    gap: 16px;
+    min-height: 24px;
     margin-bottom: 4px;
   }
 
-  .plot-toggle {
+  .settings-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    cursor: pointer;
-  }
-
-  .plot-toggle input {
-    width: auto;
+    padding: 4px 10px;
     cursor: pointer;
   }
 
