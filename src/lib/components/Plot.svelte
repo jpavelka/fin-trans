@@ -7,6 +7,8 @@
   export let sel;
   export let includeAverages = true;
   export let legendAmount = 'total';
+  // time value → months with no data, for periods that aren't fully covered
+  export let incompleteTimes = {};
 
   const dispatch = createEventDispatcher();
 </script>
@@ -20,6 +22,7 @@
       timeFrame={sel.timeFrame}
       minTime={sel.minTime}
       maxTime={sel.maxTime}
+      {incompleteTimes}
       bind:includeAverages
       bind:legendAmount
       on:filterChange
@@ -31,6 +34,7 @@
       metaCategory={sel.metaCategory}
       timeFrame={sel.timeFrame}
       time={sel.maxTime}
+      missing={incompleteTimes[sel.maxTime] ?? []}
       on:filterChange
     />
   {/if}

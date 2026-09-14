@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import { getGroupedData, currencyFormat, dateFormat, PLOT_COLORS } from '$lib/utils/plotUtils.js';
+  import { getGroupedData, currencyFormat, dateFormat, formatMonthList, PLOT_COLORS } from '$lib/utils/plotUtils.js';
   import { sortedUniqueArray } from '$lib/utils/utils.js';
   import { niceTicks, currencyAxisFormat } from '$lib/utils/chartUtils.js';
 
@@ -9,6 +9,8 @@
   export let metaCategory;
   export let timeFrame;
   export let time;
+  // Months of `time` with no data at all; empty when the period is complete.
+  export let missing = [];
 
   const dispatch = createEventDispatcher();
 
@@ -30,7 +32,7 @@
 
   // Explicit deps so Svelte re-runs when any input changes (they are only read
   // inside buildData/computeChart, which Svelte can't track on its own).
-  $: deps = [plotTx, txType, metaCategory, timeFrame, time, cw, ch];
+  $: deps = [plotTx, txType, metaCategory, timeFrame, time, missing, cw, ch];
   $: chart = (deps && plotTx && cw > 0) ? computeChart(buildData()) : null;
 
   function computeChart(bars) {
@@ -60,9 +62,13 @@
 
     const title = `${metaCategory === '_all' ? 'All' : metaCategory} ${txType === 'expense' ? 'Expenses' : 'Income'} - ${dateFormat({ d: time, timeFrame })}`;
 
+    const sub = missing.length
+      ? `Incomplete — no data for ${formatMonthList(missing)}`
+      : '';
+
     return {
       W, H, plotLeft, plotRight, plotTop, plotBottom, plotAreaH,
-      yMax, yTicks, yPos, rects, title, centerX: plotLeft + plotW / 2,
+      yMax, yTicks, yPos, rects, title, sub, centerX: plotLeft + plotW / 2,
     };
   }
 
@@ -79,7 +85,10 @@
 <div class="plot-el" bind:clientWidth={cw} bind:clientHeight={ch}>
   {#if chart}
     <svg width={chart.W} height={chart.H} role="img">
-      <text x={chart.centerX} y="30" text-anchor="middle" class="title">{chart.title}</text>
+      <text x={chart.centerX} y="26" text-anchor="middle" class="title">{chart.title}</text>
+      {#if chart.sub}
+        <text x={chart.centerX} y="44" text-anchor="middle" class="incomplete-note">{chart.sub}</text>
+      {/if}
 
       <!-- Gridlines + Y axis labels -->
       {#each chart.yTicks as t}
@@ -140,6 +149,11 @@
     font-size: 15px;
     font-weight: 600;
     fill: #2c3e50;
+  }
+
+  .incomplete-note {
+    font-size: 12px;
+    fill: #b9770e;
   }
 
   .tick {

@@ -1,6 +1,7 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import { getGroupedData, currencyFormat, dateFormat, dateFormatInv, incrementTime, addColors } from '$lib/utils/plotUtils.js';
+  import { getGroupedData, currencyFormat, dateFormat, dateFormatInv, formatMonthList, addColors } from '$lib/utils/plotUtils.js';
+  import { allTimesBetween } from '$lib/utils/utils.js';
   import { niceTicks, currencyAxisFormat, thinLabelIndices } from '$lib/utils/chartUtils.js';
 
   export let plotTx;
@@ -9,6 +10,8 @@
   export let timeFrame;
   export let minTime;
   export let maxTime;
+  // time value → months with no data, for periods that aren't fully covered
+  export let incompleteTimes = {};
 
   const dispatch = createEventDispatcher();
 
@@ -21,6 +24,11 @@
 
   $: narrow = cw > 0 && cw < 500;
 
+  // Every period on the x axis, and which of them have gaps in their data.
+  $: times = minTime && maxTime ? allTimesBetween({ minTime, maxTime, timeFrame }) : [];
+  $: incompleteFlags = times.map((t) => !!incompleteTimes[t]?.length);
+  $: anyIncomplete = incompleteFlags.some(Boolean);
+
   function buildData() {
     const groupOn = metaCategory === '_all' ? 'metaCategory' : 'category';
     const groupedData = getGroupedData({ allTx: plotTx, groupOn: [groupOn, timeFrame], includeAll: [true, false] });
@@ -29,13 +37,16 @@
     for (const [cat, catData] of Object.entries(groupedData)) {
       const catName = cat === '_all' ? 'Total' : cat;
       const x = [], y = [], text = [];
-      let time = minTime;
-      while (time <= maxTime) {
-        x.push(dateFormat({ d: time, timeFrame }));
+      for (const time of times) {
+        const label = dateFormat({ d: time, timeFrame });
+        x.push(label);
         const yVal = (catData[time] || []).reduce((s, tx) => s + tx.amount, 0);
         y.push(yVal);
-        text.push(`${catName}<br>${dateFormat({ d: time, timeFrame })}<br>${currencyFormat(yVal)}`);
-        time = incrementTime({ timeFrame, time });
+        const missing = incompleteTimes[time];
+        text.push(
+          `${catName}<br>${label}<br>${currencyFormat(yVal)}` +
+            (missing?.length ? `<br>Incomplete — no data for ${formatMonthList(missing)}` : '')
+        );
       }
       const total = y.reduce((a, b) => a + b, 0);
       const avg = y.length ? total / y.length : 0;
@@ -75,7 +86,7 @@
   // Recompute everything reactively from inputs + layout state. The explicit
   // deps array ensures Svelte re-runs when any of these change (they are only
   // read inside buildData/computeChart, which Svelte can't see on its own).
-  $: deps = [plotTx, txType, metaCategory, timeFrame, minTime, maxTime, includeAverages, legendAmount, hiddenSeries, cw, ch, narrow];
+  $: deps = [plotTx, txType, metaCategory, timeFrame, minTime, maxTime, times, incompleteFlags, includeAverages, legendAmount, hiddenSeries, cw, ch, narrow];
   $: chart = (deps && plotTx && minTime && maxTime && cw > 0)
     ? computeChart(buildData())
     : null;
@@ -93,6 +104,9 @@
       hidden: hiddenSeries.has(t._cat),
     }));
 
+    // Room under the x labels for the "* incomplete" note, when there is one.
+    const footH = anyIncomplete ? 18 : 0;
+
     // Margins / overall height differ for narrow vs desktop layouts.
     let marginL, marginR, marginT, marginB, legendWidth, H, plotAreaH;
     if (narrow) {
@@ -104,7 +118,7 @@
       marginT = 70;
       const PLOT_AREA_HEIGHT = 250;
       plotAreaH = PLOT_AREA_HEIGHT;
-      marginB = 55;
+      marginB = 55 + footH;
       H = marginT + PLOT_AREA_HEIGHT + marginB;
     } else {
       const longest = legend.reduce((m, l) => Math.max(m, l.name.length), 0);
@@ -112,7 +126,7 @@
       marginL = 60;
       marginR = 10;
       marginT = 70;
-      marginB = 50;
+      marginB = 50 + footH;
       H = Math.max(ch, 240);
       plotAreaH = H - marginT - marginB;
     }
@@ -138,7 +152,7 @@
     const series = [];
     for (const t of traces) {
       if (hiddenSeries.has(baseCat(t))) continue;
-      const pts = t.y.map((v, i) => ({ cx: xPos(i), cy: yPos(v), i, v }));
+      const pts = t.y.map((v, i) => ({ cx: xPos(i), cy: yPos(v), i, v, incomplete: !!incompleteFlags[i] }));
       series.push({
         cat: t._cat,
         groupOn: t._groupOn,
@@ -162,10 +176,14 @@
 
     const title = `${timeFrame === 'month' ? 'Month' : 'Year'}ly Trends - ${txType === 'expense' ? 'Expenses' : 'Income'}${metaCategory === '_all' ? '' : ' - ' + metaCategory}`;
     const sub = `${dateFormat({ d: minTime, timeFrame })} - ${dateFormat({ d: maxTime, timeFrame })}`;
+    const footnote = anyIncomplete
+      ? `* incomplete — some months have no data, so totals run low`
+      : '';
 
     return {
       W, H, plotLeft, plotRight, plotTop, plotBottom, plotAreaH, plotW,
       yMax, yTicks, yPos, xPos, xLabels, showIdx, series, legend, legendItems,
+      incomplete: incompleteFlags, footnote, footY: plotBottom + (narrow ? 50 : 38),
       title, sub, centerX: plotLeft + plotW / 2,
     };
   }
@@ -238,9 +256,15 @@
             text-anchor={narrow ? 'end' : 'middle'}
             transform={narrow ? `rotate(-45 ${chart.xPos(i)} ${chart.plotBottom + 14})` : ''}
             class="tick"
-          >{lbl}</text>
+            class:incomplete-tick={chart.incomplete[i]}
+          >{lbl}{chart.incomplete[i] ? '*' : ''}</text>
         {/if}
       {/each}
+
+      <!-- Note explaining the asterisk / hollow markers -->
+      {#if chart.footnote}
+        <text x={chart.plotLeft} y={chart.footY} class="footnote">{chart.footnote}</text>
+      {/if}
 
       <!-- Series -->
       {#each chart.series as s (s.cat)}
@@ -253,11 +277,15 @@
         />
         {#if !s.isAvg}
           {#each s.points as p}
+            <!-- Periods missing months are drawn hollow so a partial year is
+                 obvious even when its axis label is thinned out. -->
             <circle
               cx={p.cx}
               cy={p.cy}
-              r="4"
-              fill={s.color}
+              r={p.incomplete ? 5 : 4}
+              fill={p.incomplete ? 'var(--color-surface, #fff)' : s.color}
+              stroke={p.incomplete ? s.color : 'none'}
+              stroke-width={p.incomplete ? 2 : 0}
               class="point"
               role="button"
               tabindex="-1"
@@ -385,6 +413,15 @@
   .tick {
     font-size: 11px;
     fill: #555;
+  }
+
+  .incomplete-tick {
+    fill: #b9770e;
+  }
+
+  .footnote {
+    font-size: 11px;
+    fill: #b9770e;
   }
 
   .grid {

@@ -19,23 +19,40 @@
     dispatch('change', patch);
   }
 
-  function onPlotTypeFull(value) {
-    if (value === 'monthTrend') update({ plotTypeFull: value, plotType: 'trend', timeFrame: 'month' });
-    else if (value === 'singleMonth') update({ plotTypeFull: value, plotType: 'singlePeriod', timeFrame: 'month' });
-    else if (value === 'yearTrend') update({ plotTypeFull: value, plotType: 'trend', timeFrame: 'year' });
-    else if (value === 'singleYear') update({ plotTypeFull: value, plotType: 'singlePeriod', timeFrame: 'year' });
+  const PLOT_TYPES = {
+    monthTrend: { plotType: 'trend', timeFrame: 'month' },
+    singleMonth: { plotType: 'singlePeriod', timeFrame: 'month' },
+    yearTrend: { plotType: 'trend', timeFrame: 'year' },
+    singleYear: { plotType: 'singlePeriod', timeFrame: 'year' },
+  };
+
+  function clamp(time, lo, hi) {
+    if (lo && time < lo) return lo;
+    if (hi && time > hi) return hi;
+    return time;
   }
 
-  function onTimeFrame(value) {
-    if (sel.plotType === 'trend') {
-      if (value === 'year') {
-        update({ timeFrame: value, minTime: sel.minTime.slice(0, 4), maxTime: sel.maxTime.slice(0, 4) });
-      } else {
-        update({ timeFrame: value, minTime: sel.minTime + '-01', maxTime: sel.maxTime + '-12' });
-      }
-    } else {
-      update({ timeFrame: value, maxTime: value === 'year' ? sel.maxTime.slice(0, 4) : sel.maxTime + '-01' });
+  // Rewrite a YYYY-MM ↔ YYYY selection when the timeframe changes, keeping it
+  // inside the range we actually have data for so it still matches an option.
+  function convertTime(time, timeFrame, isEnd) {
+    if (!time) return time;
+    const g = $settings?.general || {};
+    if (timeFrame === 'year') {
+      return clamp(time.slice(0, 4), g.minMonth?.slice(0, 4), g.maxMonth?.slice(0, 4));
     }
+    const month = time.length === 4 ? `${time}-${isEnd ? '12' : '01'}` : time;
+    return clamp(month, g.minMonth, g.maxMonth);
+  }
+
+  function onPlotTypeFull(value) {
+    const { plotType, timeFrame } = PLOT_TYPES[value];
+    update({
+      plotTypeFull: value,
+      plotType,
+      timeFrame,
+      minTime: convertTime(sel.minTime, timeFrame, false),
+      maxTime: convertTime(sel.maxTime, timeFrame, true),
+    });
   }
 
   $: metaCatVersions = Object.keys($settings?.metaCategories || {}).filter((k) => k !== '_default');

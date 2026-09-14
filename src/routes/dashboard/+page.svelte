@@ -4,6 +4,7 @@
   import { currentUser, txData, settings, loadingData, minLoadMonth, maxLoadMonth } from '$lib/stores.js';
   import { transformTransactions } from '$lib/utils/transactions.js';
   import { sortedUniqueArray, allTimesBetween } from '$lib/utils/utils.js';
+  import { missingMonths } from '$lib/utils/plotUtils.js';
   import Selections from '$lib/components/Selections.svelte';
   import Plot from '$lib/components/Plot.svelte';
   import Table from '$lib/components/Table.svelte';
@@ -65,9 +66,15 @@
     if (changed) sel = { ...sel, ...patch };
   }
 
+  // ── The time range actually on screen ────────────────────────────────────────
+  // Single-period views show only maxTime, so minTime must not narrow them.
+  $: rangeStart = sel.plotType === 'singlePeriod' ? sel.maxTime : sel.minTime;
+  $: rangeEnd = sel.maxTime;
+
   // ── If the user picks an earlier start, expand the Firestore listener ────────
-  $: if (sel.minTime) {
-    const t = sel.minTime.length === 4 ? sel.minTime + '-01' : sel.minTime;
+  // A year selection covers the whole year, so load from its January.
+  $: if (rangeStart) {
+    const t = rangeStart.length === 4 ? rangeStart + '-01' : rangeStart;
     if ($minLoadMonth && t < $minLoadMonth) minLoadMonth.set(t);
   }
 
@@ -91,7 +98,7 @@
 
   // Apply all top-level filters
   $: filteredTx = allTx.filter((tx) => {
-    if (tx[sel.timeFrame] < sel.minTime || tx[sel.timeFrame] > sel.maxTime) return false;
+    if (tx[sel.timeFrame] < rangeStart || tx[sel.timeFrame] > rangeEnd) return false;
     if (tx.type !== sel.txType) return false;
     if (sel.inactiveCategories.includes(tx.category)) return false;
     if (sel.inactiveMetaCategories.includes(tx.metaCategory)) return false;
@@ -116,6 +123,23 @@
     sel.metaCategory === '_all'
       ? plotTx
       : plotTx.filter((tx) => tx.metaCategory === sel.metaCategory);
+
+  // ── Data coverage, for flagging partial years on the plot ────────────────────
+  // A month doc that is missing or empty counts as "no data". Every month of a
+  // selected year is loaded, so absence here means we genuinely have nothing.
+  $: monthsWithData = new Set(
+    Object.keys($txData).filter((m) => ($txData[m] || []).length > 0)
+  );
+
+  // time value → months it is missing, for years that aren't fully covered
+  $: incompleteTimes =
+    sel.timeFrame === 'year' && rangeStart && rangeEnd
+      ? Object.fromEntries(
+          allTimesBetween({ minTime: rangeStart, maxTime: rangeEnd, timeFrame: 'year' })
+            .map((y) => [y, missingMonths({ year: y, monthsWithData })])
+            .filter(([, missing]) => missing.length > 0)
+        )
+      : {};
 
   $: allTimes =
     $settings?.general
@@ -183,6 +207,7 @@
               <Plot
                 plotTx={plotInputTx}
                 {sel}
+                {incompleteTimes}
                 bind:includeAverages
                 bind:legendAmount
                 on:filterChange={(e) => (tableFilters = e.detail)}
