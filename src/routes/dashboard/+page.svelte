@@ -35,6 +35,9 @@
   let showTable = true;
   let applyTableFilters = false;
   let includeAverages = true;
+  let avgMode = 'overall'; // 'overall' | 'moving'
+  let avgWindow = 3; // periods in the moving-average window
+  let onlyAverages = false;
   let legendAmount = 'total'; // 'total' | 'average'
   let tableFilteredTx = [];
 
@@ -203,6 +206,9 @@
                   plotType={sel.plotType}
                   timeFrame={sel.timeFrame}
                   bind:includeAverages
+                  bind:avgMode
+                  bind:avgWindow
+                  bind:onlyAverages
                   bind:legendAmount
                   bind:applyTableFilters
                 />
@@ -215,6 +221,9 @@
                 {incompleteTimes}
                 bind:includeAverages
                 bind:legendAmount
+                {avgMode}
+                {avgWindow}
+                {onlyAverages}
                 on:filterChange={(e) => (tableFilters = e.detail)}
               />
             </div>
@@ -232,6 +241,9 @@
                 timeFrame={sel.timeFrame}
                 vertical
                 bind:includeAverages
+                bind:avgMode
+                bind:avgWindow
+                  bind:onlyAverages
                 bind:legendAmount
                 bind:applyTableFilters
               />

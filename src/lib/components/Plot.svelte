@@ -7,6 +7,9 @@
   export let sel;
   export let includeAverages = true;
   export let legendAmount = 'total';
+  export let avgMode = 'overall';
+  export let avgWindow = 3;
+  export let onlyAverages = false;
   // time value → months with no data, for periods that aren't fully covered
   export let incompleteTimes = {};
 
@@ -25,6 +28,9 @@
       {incompleteTimes}
       bind:includeAverages
       bind:legendAmount
+      {avgMode}
+      {avgWindow}
+      {onlyAverages}
       on:filterChange
     />
   {:else}

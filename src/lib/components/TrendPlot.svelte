@@ -17,6 +17,9 @@
 
   export let includeAverages = true;
   export let legendAmount = 'total'; // 'total' | 'average'
+  export let avgMode = 'overall'; // 'overall' | 'moving'
+  export let avgWindow = 3; // periods in the moving-average window
+  export let onlyAverages = false; // hide the raw series, draw just the averages
   let cw = 0;
   let ch = 0;
   let hiddenSeries = new Set();
@@ -62,13 +65,15 @@
       };
       traces.push(trace);
       if (includeAverages) {
+        const avgY = avgMode === 'moving' ? movingAverage(y, avgWindow) : y.map(() => avg);
+        const avgLabel = avgMode === 'moving' ? `${avgWindow}-${timeFrame === 'year' ? 'yr' : 'mo'} avg.` : 'Avg.';
         traces.push({
           ...trace,
           _cat: cat + '_avg',
           _isAvg: true,
           showlegend: false,
-          text: `Avg. ${catName}<br>${currencyFormat(avg)}`,
-          y: y.map(() => avg),
+          text: avgY.map((v, i) => `${avgLabel} ${catName}<br>${x[i]}<br>${currencyFormat(v)}`),
+          y: avgY,
         });
       }
     }
@@ -81,12 +86,25 @@
     return addColors(traces);
   }
 
+  // Trailing mean over the last `n` periods; the first n-1 points average
+  // over however many periods are available so far.
+  function movingAverage(y, n) {
+    const out = [];
+    let sum = 0;
+    for (let i = 0; i < y.length; i++) {
+      sum += y[i];
+      if (i >= n) sum -= y[i - n];
+      out.push(sum / Math.min(i + 1, n));
+    }
+    return out;
+  }
+
   const baseCat = (t) => t._cat.replace(/_avg$/, '');
 
   // Recompute everything reactively from inputs + layout state. The explicit
   // deps array ensures Svelte re-runs when any of these change (they are only
   // read inside buildData/computeChart, which Svelte can't see on its own).
-  $: deps = [plotTx, txType, metaCategory, timeFrame, minTime, maxTime, times, incompleteFlags, includeAverages, legendAmount, hiddenSeries, cw, ch, narrow];
+  $: deps = [plotTx, txType, metaCategory, timeFrame, minTime, maxTime, times, incompleteFlags, includeAverages, avgMode, avgWindow, onlyAverages, legendAmount, hiddenSeries, cw, ch, narrow];
   $: chart = (deps && plotTx && minTime && maxTime && cw > 0)
     ? computeChart(buildData())
     : null;
@@ -95,6 +113,10 @@
     const W = cw;
     const xLabels = traces.length ? traces[0].x : [];
     const n = xLabels.length;
+
+    const avgOnly = includeAverages && onlyAverages;
+    // With only averages shown, skip the raw series entirely.
+    const visible = (t) => !hiddenSeries.has(baseCat(t)) && !(avgOnly && !t._isAvg);
 
     // Legend entries (one per non-average trace).
     const legend = traces.filter((t) => !t._isAvg).map((t) => ({
@@ -140,7 +162,7 @@
     // Y domain from visible traces only (so legend toggles rescale).
     let dataMax = 0;
     for (const t of traces) {
-      if (hiddenSeries.has(baseCat(t))) continue;
+      if (!visible(t)) continue;
       for (const v of t.y) if (v > dataMax) dataMax = v;
     }
     const { ticks: yTicks, max: yMax } = niceTicks(dataMax, 5);
@@ -149,15 +171,18 @@
     const yPos = (v) => plotBottom - (yMax ? (v / yMax) * plotAreaH : 0);
 
     // Build polyline/point geometry for visible traces.
+    const legendColor = Object.fromEntries(legend.map((l) => [l.cat, l.color]));
     const series = [];
     for (const t of traces) {
-      if (hiddenSeries.has(baseCat(t))) continue;
+      if (!visible(t)) continue;
       const pts = t.y.map((v, i) => ({ cx: xPos(i), cy: yPos(v), i, v, incomplete: !!incompleteFlags[i] }));
       series.push({
         cat: t._cat,
         groupOn: t._groupOn,
         isAvg: !!t._isAvg,
-        color: t.line.color,
+        // Averages alone are drawn solid in their series' full color.
+        solo: avgOnly,
+        color: avgOnly ? legendColor[baseCat(t)] : t.line.color,
         polyline: pts.map((p) => `${p.cx},${p.cy}`).join(' '),
         points: pts,
         text: t.text,
@@ -273,9 +298,9 @@
           fill="none"
           stroke={s.color}
           stroke-width="2"
-          stroke-dasharray={s.isAvg ? '6 4' : ''}
+          stroke-dasharray={s.isAvg && !s.solo ? '6 4' : ''}
         />
-        {#if !s.isAvg}
+        {#if !s.isAvg || s.solo}
           {#each s.points as p}
             <!-- Periods missing months are drawn hollow so a partial year is
                  obvious even when its axis label is thinned out. -->
