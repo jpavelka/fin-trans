@@ -1,6 +1,6 @@
 import { auth, db } from '$lib/firebase.js';
 import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { collection, query, where, documentId, onSnapshot, doc, setDoc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
+import { collection, query, where, documentId, onSnapshot, doc, setDoc, getDoc, updateDoc, deleteField, arrayRemove } from 'firebase/firestore';
 import { get } from 'svelte/store';
 import { currentUser, txData, settings, loadingData, minLoadMonth, maxLoadMonth } from '$lib/stores.js';
 import dayjs from 'dayjs';
@@ -198,6 +198,39 @@ export async function deleteTransaction(tx) {
   }
   const newTransactions = stored.filter((_, i) => i !== tx._rowIdx);
   await setDoc(ref, { transactions: newTransactions }, { merge: true });
+}
+
+// ── Versioned category settings ──────────────────────────────────────────────
+// settings/metaCategories: { _default, <version>: { <metaCat>: [<category>, ...] } }
+// settings/categoryChanges: { _default, <version>: { <rawCategory>: <newCategory> } }
+// docId is 'metaCategories' or 'categoryChanges'.
+
+// Returns an error message, or null if the name is usable as a version key
+export function validateVersionName(name) {
+  if (!name || !name.trim()) return 'Name is required';
+  if (name !== name.trim()) return 'Name cannot start or end with spaces';
+  if (name.startsWith('_')) return 'Name cannot start with "_"';
+  if (name.includes('.')) return 'Name cannot contain "."';
+  return null;
+}
+
+export async function saveSettingsVersion(docId, name, mapping) {
+  const err = validateVersionName(name);
+  if (err) throw new Error(err);
+  await updateDoc(doc(db, 'settings', docId), { [name]: mapping });
+}
+
+export async function deleteSettingsVersion(docId, name) {
+  const ref = doc(db, 'settings', docId);
+  const snap = await getDoc(ref);
+  if (snap.exists() && snap.data()._default === name) {
+    throw new Error('Cannot delete the default version');
+  }
+  await updateDoc(ref, { [name]: deleteField() });
+}
+
+export async function setDefaultSettingsVersion(docId, name) {
+  await updateDoc(doc(db, 'settings', docId), { _default: name });
 }
 
 export async function signInWithGoogle() {

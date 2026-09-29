@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import { base } from '$app/paths';
   import { settings } from '$lib/stores.js';
   import CategoryModal from './CategoryModal.svelte';
   import TagModal from './TagModal.svelte';
@@ -76,7 +77,10 @@
   <!-- Row 1: versions + plot type + time range -->
   <div class="sel-row">
     <div class="sel-group">
-      <label>Category Grouping</label>
+      <label>
+        Category Grouping
+        <a class="edit-link" href="{base}/categories?tab=groupings&version={encodeURIComponent(sel.metaCatVersion ?? '')}">Edit</a>
+      </label>
       <select value={sel.metaCatVersion} on:change={(e) => update({ metaCatVersion: e.target.value })}>
         {#each metaCatVersions as v}
           <option value={v}>{v}</option>
@@ -85,7 +89,10 @@
     </div>
 
     <div class="sel-group">
-      <label>Category Changes</label>
+      <label>
+        Category Changes
+        <a class="edit-link" href="{base}/categories?tab=changes&version={encodeURIComponent(sel.categoryChangeVersion ?? '')}">Edit</a>
+      </label>
       <select value={sel.categoryChangeVersion} on:change={(e) => update({ categoryChangeVersion: e.target.value })}>
         {#each categoryChangeVersions as v}
           <option value={v}>{v}</option>
@@ -208,6 +215,16 @@
     min-width: 120px;
     max-width: 160px;
     flex: 1;
+  }
+
+  .edit-link {
+    margin-left: 4px;
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .edit-link:hover {
+    text-decoration: underline;
   }
 
   .extra-controls {

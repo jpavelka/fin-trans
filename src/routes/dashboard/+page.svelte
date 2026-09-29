@@ -53,12 +53,17 @@
   $: if ($settings?.general && $minLoadMonth && $maxLoadMonth) {
     let changed = false;
     const patch = {};
-    if (!sel.metaCatVersion) {
-      patch.metaCatVersion = ($settings.metaCategories || {})._default;
+    // Also reset if the selected version was deleted from the Categories page
+    const mcDefault = ($settings.metaCategories || {})._default;
+    if (sel.metaCatVersion !== mcDefault &&
+        (!sel.metaCatVersion || !($settings.metaCategories || {})[sel.metaCatVersion])) {
+      patch.metaCatVersion = mcDefault;
       changed = true;
     }
-    if (!sel.categoryChangeVersion) {
-      patch.categoryChangeVersion = ($settings.categoryChanges || {})._default;
+    const ccDefault = ($settings.categoryChanges || {})._default;
+    if (sel.categoryChangeVersion !== ccDefault &&
+        (!sel.categoryChangeVersion || !($settings.categoryChanges || {})[sel.categoryChangeVersion])) {
+      patch.categoryChangeVersion = ccDefault;
       changed = true;
     }
     if (!sel.minTime) { patch.minTime = $minLoadMonth; changed = true; }

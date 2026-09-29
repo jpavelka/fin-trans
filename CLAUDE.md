@@ -35,6 +35,7 @@ Routes use `/fin-trans` as the base path (configured in `svelte.config.js`) for 
 - `/fin-trans/login` → Google sign-in
 - `/fin-trans/dashboard` → main dashboard
 - `/fin-trans/upload` → CSV upload and manual entry
+- `/fin-trans/categories` → edit category groupings and category changes; accepts `?tab=groupings|changes&version=`
 
 `src/routes/+layout.js` sets `ssr = false` globally; all auth and Firestore work is client-side only.
 
@@ -46,6 +47,7 @@ Routes use `/fin-trans` as the base path (configured in `svelte.config.js`) for 
 - `updateTransaction(tx, updates)` — updates a single transaction in place; handles moving to a different month doc if the date changes
 - `deleteTransaction(tx)` — removes a transaction by `_rowIdx`
 - `savePendingUploads(rows)` / `loadPendingUploads()` — draft save to `pending/pending_uploads`
+- `saveSettingsVersion(docId, name, mapping)` / `deleteSettingsVersion(docId, name)` / `setDefaultSettingsVersion(docId, name)` — edit versioned settings docs: `settings/metaCategories` (`{ _default, <version>: { <metaCat>: [categories] } }`) and `settings/categoryChanges` (`{ _default, <version>: { <raw>: <new> } }`); `validateVersionName(name)` guards keys
 
 **`src/lib/utils/transactions.js`** — core data transformation: category mapping, meta-category assignment, tag parsing, amortization logic. Called at read time; adds `metaCategory`, `type`, `month`, `year` fields and makes `amount` always positive (`Math.abs`).
 
@@ -56,6 +58,9 @@ Routes use `/fin-trans` as the base path (configured in `svelte.config.js`) for 
 - **`Table.svelte`** — dashboard transaction table with: column resizing, sticky headers, per-column filters (date pickers, amount range, text with per-column regex toggle and autocomplete for category/metaCategory/account/tags), sorting, inline edit (pencil) and delete (trash) buttons per row
 - **`EditTransactionModal.svelte`** — modal form for editing a transaction's base fields; dispatches `save` / `cancel`
 - **`CategoryModal.svelte`**, **`TagModal.svelte`** — filter modals, dispatch `save` / `cancel`
+- **`GroupingsEditor.svelte`** — assign categories to meta categories; add/rename/delete meta categories
+- **`CategoryChangesEditor.svelte`** — map raw categories to new names (autocomplete), shows resulting meta category under the default grouping, warns on chained changes
+- **`VersionBar.svelte`**, **`SaveBar.svelte`** — shared version controls for the two editors (callback props)
 
 ### Routes
 
@@ -69,6 +74,8 @@ Routes use `/fin-trans` as the base path (configured in `svelte.config.js`) for 
 - Row combining, splitting, selection with shift-click
 - Save as pending draft to Firestore; resume on next visit
 - Save to Firestore with confirmation; warns on navigation with unsaved changes
+
+**`src/routes/categories/+page.svelte`** — shell with a Groupings | Changes tab toggle (synced to `?tab=` via `replaceState`), viewport-fit layout, and the unsaved-changes guard. Tabs render `GroupingsEditor` / `CategoryChangesEditor`, which each bind `dirty` and share `VersionBar` (version select, make default, delete) and `SaveBar` (save, save as new, discard). Shared layout/table styles are the `.cat-*` classes in `src/app.css`.
 
 ### Pure Utilities (`src/lib/utils/`)
 

@@ -21,6 +21,7 @@
     {#if $currentUser}
       <div class="nav-links">
         <a href="{base}/dashboard">Dashboard</a>
+        <a href="{base}/categories">Categories</a>
         <a href="{base}/upload">Upload</a>
       </div>
       <button on:click={signOutUser}>Sign Out</button>
