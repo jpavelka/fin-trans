@@ -2,8 +2,9 @@
   import { goto, beforeNavigate } from '$app/navigation';
   import { base } from '$app/paths';
   import { onMount, onDestroy, afterUpdate } from 'svelte';
-  import { currentUser, txData } from '$lib/stores.js';
-  import { savePendingUploads, loadPendingUploads, clearPendingUploads, saveTransactions } from '$lib/dataService.js';
+  import { currentUser, txData, settings } from '$lib/stores.js';
+  import { savePendingUploads, loadPendingUploads, clearPendingUploads, saveTransactions, loadMonthTransactions } from '$lib/dataService.js';
+  import dayjs from 'dayjs';
 
   $: knownCategories = [...new Set(
     Object.values($txData).flat().map(tx => tx.category).filter(Boolean)
@@ -325,6 +326,86 @@
       date: '', account: '', description: '', category: '',
       tags: '', amount: '', comments: '', questions: '',
     }];
+  }
+
+  // ── Copy from previous month ───────────────────────────────────────────────
+  // Payroll deductions never appear in Empower exports, so copy them forward
+  // from an earlier month's stored transactions.
+  const PAYROLL_ACCOUNT = 'payroll';
+  const dupKey = (r) => [r.account, r.description, parseFloat(r.amount)].join('|').toLowerCase();
+
+  let copyOpen = false;
+  let copySource = '';        // YYYY-MM
+  let copyTarget = '';        // YYYY-MM
+  let copyItems = [];         // { tx, checked, duplicate }
+  let copyStatus = '';        // '' | 'loading' | 'error'
+  let copyLoadId = 0;
+
+  function openCopyModal() {
+    // Default: copy the latest saved month into the month after it
+    const maxMonth = $settings?.general?.maxMonth;
+    copySource = maxMonth
+      ? dayjs(maxMonth).format('YYYY-MM')
+      : dayjs().subtract(1, 'month').format('YYYY-MM');
+    copyTarget = dayjs(copySource + '-01').add(1, 'month').format('YYYY-MM');
+    copyOpen = true;
+    loadCopyItems();
+  }
+
+  function closeCopyModal() { copyOpen = false; copyItems = []; }
+
+  async function loadCopyItems() {
+    if (!copySource || !copyTarget) { copyItems = []; return; }
+    const loadId = ++copyLoadId;
+    copyStatus = 'loading';
+    try {
+      const [source, target] = await Promise.all([
+        loadMonthTransactions(copySource),
+        loadMonthTransactions(copyTarget),
+      ]);
+      if (loadId !== copyLoadId) return;
+      const existing = new Set([
+        ...target.map(dupKey),
+        ...rows.filter(r => r.date.startsWith(copyTarget)).map(dupKey),
+      ]);
+      // Payroll rows first, then everything else, each by date
+      copyItems = source
+        .map(tx => {
+          const duplicate = existing.has(dupKey(tx));
+          const isPayroll = String(tx.account ?? '').trim().toLowerCase() === PAYROLL_ACCOUNT;
+          return { tx, duplicate, checked: isPayroll && !duplicate, isPayroll };
+        })
+        .sort((a, b) => (b.isPayroll - a.isPayroll) || a.tx.date.localeCompare(b.tx.date));
+      copyStatus = '';
+    } catch (e) {
+      console.error(e);
+      if (loadId === copyLoadId) copyStatus = 'error';
+    }
+  }
+
+  $: copyCheckedCount = copyItems.filter(i => i.checked).length;
+  $: copyMonthDiff = copySource && copyTarget
+    ? dayjs(copyTarget + '-01').diff(dayjs(copySource + '-01'), 'month')
+    : 0;
+
+  function confirmCopy() {
+    savedAsPending = false;
+    let nextId = rows.reduce((max, r) => Math.max(max, r._id), -1) + 1;
+    const copied = copyItems.filter(i => i.checked).map(({ tx }) => ({
+      _id: nextId++,
+      _transferGroup: null,
+      date:        dayjs(tx.date).add(copyMonthDiff, 'month').format('YYYY-MM-DD'),
+      account:     tx.account ?? '',
+      description: tx.description ?? '',
+      category:    tx.category ?? '',
+      tags:        Array.isArray(tx.tags) ? tx.tags.join(', ') : (tx.tags ?? ''),
+      amount:      String(tx.amount ?? ''),
+      comments:    '',
+      questions:   '',
+    }));
+    if (!rows.length && !fileName) fileName = `(copied from ${copySource})`;
+    rows = [...rows, ...copied];
+    closeCopyModal();
   }
 
   // ── Selection ──────────────────────────────────────────────────────────────
@@ -819,6 +900,7 @@
           <button on:click={deleteAllTransferPairs}>Delete all transfer groups</button>
         {/if}
         <button on:click={addRow}>+ Add row</button>
+        <button on:click={openCopyModal}>Copy from previous month</button>
         {#if selectedCount > 0}
           <button class="danger" on:click={deleteSelected}>Delete selected</button>
         {/if}
@@ -859,6 +941,8 @@
     <div class="manual-entry-bar">
       <span>or</span>
       <button on:click={addRow}>+ Enter transactions by hand</button>
+      <span>or</span>
+      <button on:click={openCopyModal}>Copy from previous month</button>
     </div>
 
     {/if}
@@ -1080,6 +1164,71 @@
       <div class="modal-footer">
         <button class="primary" on:click={confirmCombine}>Combine</button>
         <button on:click={closeCombineModal}>Cancel</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if copyOpen}
+  <div class="modal-overlay" role="dialog" on:click|self={closeCopyModal}>
+    <div class="modal copy-modal">
+      <div class="modal-header">Copy Transactions From Previous Month</div>
+      <div class="modal-body">
+        <div class="copy-months">
+          <label>
+            From
+            <input type="month" bind:value={copySource} on:change={loadCopyItems} />
+          </label>
+          <label>
+            To
+            <input type="month" bind:value={copyTarget} on:change={loadCopyItems} />
+          </label>
+        </div>
+
+        {#if copyStatus === 'loading'}
+          <p class="copy-msg">Loading…</p>
+        {:else if copyStatus === 'error'}
+          <p class="copy-msg split-error">Failed to load transactions.</p>
+        {:else if !copyItems.length}
+          <p class="copy-msg">No transactions found for {copySource}.</p>
+        {:else}
+          <div class="copy-list">
+            <table class="copy-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Date</th>
+                  <th>Account</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th class="copy-amt">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each copyItems as item}
+                  <tr class:copy-dup={item.duplicate} class:copy-other={!item.isPayroll}>
+                    <td><input type="checkbox" bind:checked={item.checked} /></td>
+                    <td>{dayjs(item.tx.date).add(copyMonthDiff, 'month').format('YYYY-MM-DD')}</td>
+                    <td>{item.tx.account}</td>
+                    <td>
+                      {item.tx.description}
+                      {#if item.duplicate}<span class="copy-dup-badge" title="Same account, description and amount already exists in {copyTarget}">already in {copyTarget}</span>{/if}
+                    </td>
+                    <td>{item.tx.category}</td>
+                    <td class="copy-amt" class:negative-amt={parseFloat(item.tx.amount) < 0}>{item.tx.amount}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </div>
+      <div class="modal-footer">
+        <button class="primary" disabled={!copyCheckedCount || copyMonthDiff <= 0} on:click={confirmCopy}>
+          Add {copyCheckedCount} row{copyCheckedCount === 1 ? '' : 's'}
+        </button>
+        <button on:click={closeCopyModal}>Cancel</button>
+        {#if copyMonthDiff <= 0}<span class="split-error">"To" must be after "From".</span>{/if}
       </div>
     </div>
   </div>
@@ -1537,6 +1686,27 @@
     color: white;
   }
   .combine-choice-active:hover { color: white; }
+
+  /* Copy-from-month modal */
+  .copy-modal { min-width: 640px; max-width: 900px; }
+  .copy-months { display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px; }
+  .copy-months label { display: flex; align-items: center; gap: 6px; }
+  .copy-msg { font-size: 13px; color: var(--color-text-muted); }
+  .copy-list { max-height: 50vh; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius); }
+  .copy-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .copy-table th {
+    position: sticky; top: 0; background: #f8f8f8;
+    text-align: left; font-weight: 600; font-size: 12px; padding: 6px 8px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .copy-table td { padding: 4px 8px; border-top: 1px solid var(--color-border); white-space: nowrap; }
+  .copy-table .copy-amt { text-align: right; }
+  .copy-other td { color: var(--color-text-muted); }
+  .copy-dup td   { background: #fef3c7; }
+  .copy-dup-badge {
+    margin-left: 6px; font-size: 11px; padding: 1px 5px; border-radius: 3px;
+    background: #fde68a; color: #92400e;
+  }
 
   /* Toast */
   .toast {

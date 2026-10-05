@@ -139,6 +139,12 @@ export async function saveTransactions(rows) {
   return Object.fromEntries(months.map((m) => [m, byMonth[m].length]));
 }
 
+// Raw stored transactions for one month (no transform: signed amounts, original categories)
+export async function loadMonthTransactions(month) {
+  const snap = await getDoc(doc(db, 'months', month));
+  return snap.exists() ? (snap.data().transactions ?? []) : [];
+}
+
 export async function savePendingUploads(rows) {
   const ref = doc(db, 'pending', 'pending_uploads');
   await setDoc(ref, { rows });
